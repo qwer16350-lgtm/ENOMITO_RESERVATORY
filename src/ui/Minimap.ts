@@ -1,7 +1,7 @@
 import type { Character } from '../entities/Character';
 import type { ViewBounds } from '../world/TileMap';
 import { worldToIso } from '../world/Projection';
-import { isoToMinimap, MINIMAP_SCALE } from './MinimapProjection';
+import { isoToMinimap, minimapToIso, MINIMAP_SCALE } from './MinimapProjection';
 
 export class Minimap {
   private box: SVGRectElement;
@@ -10,6 +10,20 @@ export class Minimap {
   constructor() {
     this.box = document.querySelector<SVGRectElement>('#minimap-camera')!;
     this.dot = document.querySelector<SVGCircleElement>('#minimap-character')!;
+  }
+
+  bindNavigation(move: (x: number, y: number) => void, stop: () => void, signal: AbortSignal) {
+    const panel = document.querySelector<HTMLElement>('#minimap')!;
+    const svg = panel.querySelector<SVGSVGElement>('svg')!;
+    panel.addEventListener('pointerenter', stop, { signal });
+    panel.addEventListener('pointerdown', stop, { signal });
+    svg.addEventListener('click', (event) => {
+      const matrix = svg.getScreenCTM();
+      if (!matrix) return;
+      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+      const destination = minimapToIso(point.x, point.y);
+      if (destination) move(destination.x, destination.y);
+    }, { signal });
   }
 
   update(view: ViewBounds, character: Character) {

@@ -40,6 +40,7 @@ export class ObservatoryScene extends Phaser.Scene {
       if (this.drag && canvas.hasPointerCapture(this.drag.id)) canvas.releasePointerCapture(this.drag.id);
       this.drag = null;
     };
+    this.minimap.bindNavigation((x, y) => { stop(); this.view.moveToIso(x, y); }, stop, controls.signal);
     canvas.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 || this.drag) return;
       this.inertia.stop(); clearEdge();
