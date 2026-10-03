@@ -4,7 +4,7 @@ import { TileMap } from './TileMap';
 import { MapCamera } from '../camera/MapCamera';
 import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
-import { DIRECTIONS, type Character } from '../entities/Character';
+import type { Character } from '../entities/Character';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';
 
@@ -24,14 +24,10 @@ export class ObservatoryScene extends Phaser.Scene {
   create() {
     this.grid = this.add.graphics();
     this.grid.setDepth(-100000);
-    // Eight preview entities, not imported Tamagotchi seed data.
-    DIRECTIONS.forEach((direction, index) => {
-      const angle = index * Math.PI / 4 - Math.PI / 2;
-      const offset = isoToWorld(Math.cos(angle) * 160, Math.sin(angle) * 140);
-      const character: Character = { id: 'preview-' + direction, worldX: 511.5 + offset.x, worldY: 511.5 + offset.y, direction };
-      this.characters.push({ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) });
-    });
-    this.game.canvas.dataset.characters = '8';
+    // One character uses all eight direction assets; not imported Tamagotchi seed data.
+    const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle' };
+    this.characters = [{ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) }];
+    this.game.canvas.dataset.characters = '1';
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
     const controls = new AbortController();
     const canvas = this.game.canvas;
@@ -91,7 +87,7 @@ export class ObservatoryScene extends Phaser.Scene {
   update(_time = 0, delta = 0) {
     if (!document.hidden) for (const character of this.characters) {
       character.behavior.update(delta);
-      CharacterRenderer.sync(character.model, character.visual);
+      CharacterRenderer.sync(character.model, character.visual, _time);
     }
     this.game.canvas.dataset.characterStates = JSON.stringify(this.characters.map(({ model }) => model));
     if (!document.hidden && !this.drag && this.inertia.active) {

@@ -27,10 +27,12 @@ export class CharacterRenderer {
     return { sprite, label };
   }
 
-  static sync(character: Character, visual: ReturnType<typeof CharacterRenderer.create>) {
+  static sync(character: Character, visual: ReturnType<typeof CharacterRenderer.create>, time = 0) {
     const p = worldToIso(character.worldX, character.worldY);
     const footY = p.y + 16;
     visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture('mito-idle-' + character.direction);
+    // Temporary walking motion using the same eight replaceable images.
+    visual.sprite.setRotation(character.state === 'walk' ? Math.sin(time / 90) * 0.035 : 0);
     visual.label.setPosition(p.x, footY + 12).setText(`${character.direction} · ${character.state === 'walk' ? '이동' : '휴식'}`);
   }
 }
