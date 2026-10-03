@@ -2,30 +2,46 @@ import Phaser from 'phaser';
 import { worldToIso, isoToWorld } from './Projection';
 import { TileMap } from './TileMap';
 import { MapCamera } from '../camera/MapCamera';
+import { edgeScroll } from '../camera/EdgeScroll';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
   private view = new MapCamera();
   private grid!: Phaser.GameObjects.Graphics;
   private lastView = '';
+  private edge = { x: 0, y: 0 };
   constructor() { super('observatory'); }
 
   create() {
     this.grid = this.add.graphics();
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (p.isDown) this.view.pan(p.prevPosition.x - p.x, p.prevPosition.y - p.y);
-    });
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)));
     const controls = new AbortController();
+    const canvas = this.game.canvas;
+    const stop = () => { this.edge = { x: 0, y: 0 }; canvas.style.cursor = 'default'; };
+    canvas.addEventListener('pointermove', (event) => {
+      if (event.pointerType !== 'mouse') { stop(); return; }
+      const rect = canvas.getBoundingClientRect();
+      this.edge = edgeScroll(event.clientX - rect.left, event.clientY - rect.top, rect.width, rect.height);
+      const { x, y } = this.edge;
+      canvas.style.cursor = x < 0 ? (y < 0 ? 'nw-resize' : y > 0 ? 'sw-resize' : 'w-resize') : x > 0 ? (y < 0 ? 'ne-resize' : y > 0 ? 'se-resize' : 'e-resize') : y < 0 ? 'n-resize' : y > 0 ? 's-resize' : 'default';
+    }, { signal: controls.signal });
+    canvas.addEventListener('pointerleave', stop, { signal: controls.signal });
+    canvas.addEventListener('pointercancel', stop, { signal: controls.signal });
+    window.addEventListener('blur', stop, { signal: controls.signal });
+    document.addEventListener('visibilitychange', stop, { signal: controls.signal });
     document.querySelector('#zoom-in')!.addEventListener('click', () => this.view.setZoom(this.view.zoom * 1.25), { signal: controls.signal });
     document.querySelector('#zoom-out')!.addEventListener('click', () => this.view.setZoom(this.view.zoom / 1.25), { signal: controls.signal });
-    document.querySelector('#map-center')!.addEventListener('click', () => this.view.center(), { signal: controls.signal });
+    document.querySelector('#map-center')!.addEventListener('click', () => { stop(); this.view.center(); }, { signal: controls.signal });
     this.events.once('shutdown', () => controls.abort());
     this.game.canvas.dataset.ready = 'true';
     this.update();
   }
 
-  update() {
+  update(_time = 0, delta = 0) {
+    if (!document.hidden && (this.edge.x !== 0 || this.edge.y !== 0)) {
+      const step = 600 * Math.min(delta, 50) / 1000;
+      this.view.pan(this.edge.x * step, this.edge.y * step);
+    }
     const key = `${this.view.x},${this.view.y},${this.view.zoom}`;
     if (key === this.lastView) return;
     this.lastView = key;
