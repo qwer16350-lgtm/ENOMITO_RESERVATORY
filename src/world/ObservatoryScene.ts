@@ -6,9 +6,11 @@ import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
 import { DIRECTIONS, type Character } from '../entities/Character';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
+import { WanderBehavior } from '../behavior/WanderBehavior';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
+  private characters: { model: Character; behavior: WanderBehavior; visual: ReturnType<typeof CharacterRenderer.create> }[] = [];
   private view = new MapCamera();
   private grid!: Phaser.GameObjects.Graphics;
   private lastView = '';
@@ -27,7 +29,7 @@ export class ObservatoryScene extends Phaser.Scene {
       const angle = index * Math.PI / 4 - Math.PI / 2;
       const offset = isoToWorld(Math.cos(angle) * 160, Math.sin(angle) * 140);
       const character: Character = { id: 'preview-' + direction, worldX: 511.5 + offset.x, worldY: 511.5 + offset.y, direction };
-      CharacterRenderer.create(this, character);
+      this.characters.push({ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) });
     });
     this.game.canvas.dataset.characters = '8';
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
@@ -87,6 +89,11 @@ export class ObservatoryScene extends Phaser.Scene {
   }
 
   update(_time = 0, delta = 0) {
+    if (!document.hidden) for (const character of this.characters) {
+      character.behavior.update(delta);
+      CharacterRenderer.sync(character.model, character.visual);
+    }
+    this.game.canvas.dataset.characterStates = JSON.stringify(this.characters.map(({ model }) => model));
     if (!document.hidden && !this.drag && this.inertia.active) {
       const movement = this.inertia.step(delta);
       const previous = { x: this.view.x, y: this.view.y };
