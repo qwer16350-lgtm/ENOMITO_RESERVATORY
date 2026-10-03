@@ -1,0 +1,8 @@
+:root { font-family: 'Segoe UI', sans-serif; color: #deebe5; background: #0b141e; }
+body { margin: 0; }
+main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
+header > p:first-child { color: #89b99e; font-size: 12px; letter-spacing: 3px; }
+h1 { font-size: 32px; margin: 12px 0; }
+header p, #status { color: #a8beb5; line-height: 1.6; }
+#game { width: 100%; aspect-ratio: 16 / 9; margin-top: 28px; border: 1px solid #345246; border-radius: 14px; overflow: hidden; }
+canvas { display: block; }
