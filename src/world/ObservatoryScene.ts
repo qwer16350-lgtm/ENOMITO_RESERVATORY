@@ -8,10 +8,12 @@ import type { Character } from '../entities/Character';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';
 import { Minimap } from '../ui/Minimap';
+import { CharacterProfileTooltip } from '../ui/CharacterProfile';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
   private minimap!: Minimap;
+  private profileTooltip!: CharacterProfileTooltip;
   private characters: { model: Character; behavior: WanderBehavior; visual: ReturnType<typeof CharacterRenderer.create> }[] = [];
   private view = new MapCamera();
   private grid!: Phaser.GameObjects.Graphics;
@@ -27,13 +29,14 @@ export class ObservatoryScene extends Phaser.Scene {
     this.grid = this.add.graphics();
     this.grid.setDepth(-100000);
     // One character uses all eight direction assets; not imported Tamagotchi seed data.
-    const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle' };
+    const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle', profile: { name: '미토', arrivedAt: Date.now(), type: '기본형', generation: 1 } };
     this.characters = [{ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) }];
     this.game.canvas.dataset.characters = '1';
     this.minimap = new Minimap();
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
     const controls = new AbortController();
     const canvas = this.game.canvas;
+    this.profileTooltip = new CharacterProfileTooltip(canvas, controls.signal);
     const clearEdge = () => { this.edge = { x: 0, y: 0 }; canvas.style.cursor = 'default'; };
     const stop = () => {
       this.inertia.stop(); clearEdge();
@@ -107,6 +110,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.game.canvas.dataset.cameraX = String(this.view.x);
     this.game.canvas.dataset.cameraY = String(this.view.y);
     this.minimap.update(this.view.bounds(this.scale.width, this.scale.height), this.characters[0].model);
+    this.profileTooltip.update(this.characters[0].model, this.view.bounds(this.scale.width, this.scale.height), this.game.canvas, !!this.drag);
     const key = `${this.view.x},${this.view.y},${this.view.zoom}`;
     if (key === this.lastView) return;
     this.lastView = key;

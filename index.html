@@ -11,6 +11,10 @@
       <nav aria-label="맵 조작"><button id="zoom-out" type="button">축소 −</button> <button id="zoom-in" type="button">확대 +</button> <button id="map-center" type="button">맵 중심으로</button></nav>
       <div id="game-wrapper">
         <div id="game" aria-label="관측소 기본 화면"></div>
+        <div id="character-profile" role="tooltip" aria-label="캐릭터 프로필" hidden>
+          <strong data-field="name"></strong>
+          <dl><dt>나이 · 도착 후</dt><dd data-field="age"></dd><dt>유형</dt><dd data-field="type"></dd><dt>세대</dt><dd data-field="generation"></dd></dl>
+        </div>
         <aside id="minimap" aria-label="전체 맵 미니맵">
           <div class="minimap-title">전체 맵 · 클릭하여 이동</div>
           <svg viewBox="0 0 220 130" role="img" aria-label="흰색 테두리는 카메라 범위, 형광 초록 점은 캐릭터 위치">
