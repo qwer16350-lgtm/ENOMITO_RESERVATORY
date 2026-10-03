@@ -7,9 +7,11 @@ import { CameraInertia } from '../camera/CameraInertia';
 import type { Character } from '../entities/Character';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';
+import { Minimap } from '../ui/Minimap';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
+  private minimap!: Minimap;
   private characters: { model: Character; behavior: WanderBehavior; visual: ReturnType<typeof CharacterRenderer.create> }[] = [];
   private view = new MapCamera();
   private grid!: Phaser.GameObjects.Graphics;
@@ -28,6 +30,7 @@ export class ObservatoryScene extends Phaser.Scene {
     const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle' };
     this.characters = [{ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) }];
     this.game.canvas.dataset.characters = '1';
+    this.minimap = new Minimap();
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
     const controls = new AbortController();
     const canvas = this.game.canvas;
@@ -102,6 +105,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.game.canvas.dataset.motion = this.drag ? 'drag' : this.inertia.active ? 'inertia' : (this.edge.x || this.edge.y) ? 'edge' : 'idle';
     this.game.canvas.dataset.cameraX = String(this.view.x);
     this.game.canvas.dataset.cameraY = String(this.view.y);
+    this.minimap.update(this.view.bounds(this.scale.width, this.scale.height), this.characters[0].model);
     const key = `${this.view.x},${this.view.y},${this.view.zoom}`;
     if (key === this.lastView) return;
     this.lastView = key;

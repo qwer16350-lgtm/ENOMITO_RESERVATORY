@@ -9,3 +9,10 @@ canvas { display: block; }
 button { background: #25473e; color: #deebe5; border: 1px solid #4e7764; border-radius: 6px; padding: 9px 14px; cursor: pointer; }
 button:hover { background: #345e4e; }
 #game { touch-action: none; cursor: default; }
+#game-wrapper { position: relative; }
+#minimap { position: absolute; left: 12px; bottom: 12px; width: clamp(140px, 24%, 220px); padding: 8px; border: 1px solid #537766; border-radius: 8px; background: #0b1825ed; pointer-events: none; }
+#minimap svg { display: block; width: 100%; height: auto; }
+.minimap-title, .minimap-legend { font-size: 11px; color: #bfd3c8; }
+.minimap-legend { display: flex; align-items: center; gap: 5px; }
+.camera-key { width: 9px; height: 6px; border: 1px solid white; }
+.character-key { width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: #39ff14; }

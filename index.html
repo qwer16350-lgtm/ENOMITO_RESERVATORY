@@ -9,7 +9,19 @@
     <main>
       <header><p>INOMITO OBSERVATORY</p><h1>미토 관측소</h1><p>가장자리 커서 또는 드래그로 이동 · 드래그 후 관성 이동 · 클릭하면 즉시 정지 · 휠로 확대/축소</p></header>
       <nav aria-label="맵 조작"><button id="zoom-out" type="button">축소 −</button> <button id="zoom-in" type="button">확대 +</button> <button id="map-center" type="button">맵 중심으로</button></nav>
-      <div id="game" aria-label="관측소 기본 화면"></div>
+      <div id="game-wrapper">
+        <div id="game" aria-label="관측소 기본 화면"></div>
+        <aside id="minimap" aria-label="전체 맵 미니맵">
+          <div class="minimap-title">전체 맵 · 1024 × 1024</div>
+          <svg viewBox="0 0 220 130" role="img" aria-label="흰색 테두리는 카메라 범위, 형광 초록 점은 캐릭터 위치">
+            <polygon points="110,16 208,65 110,114 12,65" fill="#2b5146" stroke="#6c9a83" stroke-width="1" />
+            <path d="M61 40.5 L159 89.5 M159 40.5 L61 89.5 M12 65 H208 M110 16 V114" stroke="#456e5c" stroke-width="0.5" fill="none" />
+            <circle id="minimap-character" cx="110" cy="65" r="1.8" fill="#39ff14" />
+            <rect id="minimap-camera" x="0" y="0" width="0" height="0" fill="none" stroke="#ffffff" stroke-width="1.2" />
+          </svg>
+          <div class="minimap-legend"><span class="camera-key"></span> 카메라 <span class="character-key"></span> 캐릭터</div>
+        </aside>
+      </div>
       <p id="status" role="status">관측소를 준비하고 있습니다…</p>
     </main>
     <script type="module" src="/src/main.ts"></script>
