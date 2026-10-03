@@ -9,16 +9,25 @@ export function movementDirection(dx: number, dy: number, previous: Direction): 
   return DIRECTIONS[(Math.round(angle / (Math.PI / 4)) + 2 + 8) % 8];
 }
 
+export function restingDirection(direction: Direction, previous: 'N' | 'S' = 'S'): 'N' | 'S' {
+  if (direction === 'N' || direction === 'NE' || direction === 'NW') return 'N';
+  if (direction === 'S' || direction === 'SE' || direction === 'SW') return 'S';
+  return previous;
+}
+
 export class WanderBehavior {
   private remaining: number;
   private target: { x: number; y: number } | null = null;
   readonly speed = 1.2; // World tile units per second.
   private character: Character;
   private random: () => number;
+  private restingFacing: 'N' | 'S';
 
   constructor(character: Character, random: () => number = Math.random) {
     this.character = character; this.random = random;
+    this.restingFacing = restingDirection(character.direction);
     character.state = 'idle';
+    character.direction = this.restingFacing;
     this.remaining = 0.5 + random() * 3;
   }
 
@@ -37,9 +46,11 @@ export class WanderBehavior {
     const dx = this.target.x - c.worldX, dy = this.target.y - c.worldY;
     const distance = Math.hypot(dx, dy);
     c.direction = movementDirection(dx, dy, c.direction);
+    this.restingFacing = restingDirection(c.direction, this.restingFacing);
     if (distance <= this.speed * dt) {
       c.worldX = this.target.x; c.worldY = this.target.y;
       this.target = null; c.state = 'idle';
+      c.direction = this.restingFacing;
       this.remaining = 1 + this.random() * 4;
     } else {
       c.worldX += dx / distance * this.speed * dt;

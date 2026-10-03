@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { WanderBehavior, movementDirection } from '../src/behavior/WanderBehavior.ts';
+import { WanderBehavior, movementDirection, restingDirection } from '../src/behavior/WanderBehavior.ts';
 import { isoToWorld } from '../src/world/Projection.ts';
 
 test('world movement projects to all eight matching screen directions', () => {
@@ -17,6 +17,22 @@ test('wandering alternates idle and walk, reaches destination without overshoot'
   assert.equal(c.state,'walk'); assert.ok(c.worldX > 500); assert.equal(c.direction,'SE');
   for(let i=0;i<16;i++) behavior.update(100);
   assert.equal(c.worldX,502); assert.equal(c.state,'idle');
+  assert.equal(c.direction,'S');
+});
+
+test('rest uses front/back and lateral movement remembers its previous side', () => {
+  for(const d of ['N','NE','NW']) assert.equal(restingDirection(d,'S'),'N');
+  for(const d of ['S','SE','SW']) assert.equal(restingDirection(d,'N'),'S');
+  for(const d of ['E','W']) {
+    assert.equal(restingDirection(d,'N'),'N');
+    assert.equal(restingDirection(d,'S'),'S');
+  }
+  const c={id:'back',worldX:500,worldY:500,direction:'NE'};
+  const values=[0,0.625,0,0];
+  const b=new WanderBehavior(c,()=>values.shift()??0);
+  assert.equal(c.direction,'N');
+  for(let i=0;i<23;i++) b.update(100);
+  assert.equal(c.state,'idle'); assert.equal(c.direction,'N');
 });
 test('long wandering stays within all four map edges', () => {
   let seed=42;
