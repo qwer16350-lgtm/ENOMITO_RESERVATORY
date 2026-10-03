@@ -4,6 +4,8 @@ import { TileMap } from './TileMap';
 import { MapCamera } from '../camera/MapCamera';
 import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
+import { DIRECTIONS, type Character } from '../entities/Character';
+import { CharacterRenderer } from '../rendering/CharacterRenderer';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
@@ -15,8 +17,19 @@ export class ObservatoryScene extends Phaser.Scene {
   private drag: { id: number; x: number; y: number; startX: number; startY: number; time: number; moved: boolean } | null = null;
   constructor() { super('observatory'); }
 
+  preload() { CharacterRenderer.preload(this); }
+
   create() {
     this.grid = this.add.graphics();
+    this.grid.setDepth(-100000);
+    // Eight preview entities, not imported Tamagotchi seed data.
+    DIRECTIONS.forEach((direction, index) => {
+      const angle = index * Math.PI / 4 - Math.PI / 2;
+      const offset = isoToWorld(Math.cos(angle) * 160, Math.sin(angle) * 140);
+      const character: Character = { id: 'preview-' + direction, worldX: 511.5 + offset.x, worldY: 511.5 + offset.y, direction };
+      CharacterRenderer.create(this, character);
+    });
+    this.game.canvas.dataset.characters = '8';
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
     const controls = new AbortController();
     const canvas = this.game.canvas;
