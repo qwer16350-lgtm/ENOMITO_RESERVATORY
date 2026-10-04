@@ -35,6 +35,7 @@ export class CharacterProfileTooltip {
     this.panel.querySelector('[data-field="age"]')!.textContent = arrivalAge(profile.arrivedAt);
     this.panel.querySelector('[data-field="type"]')!.textContent = profile.type;
     this.panel.querySelector('[data-field="generation"]')!.textContent = `${profile.generation}세대`;
+    this.panel.querySelector('[data-field="behavior"]')!.textContent = character.state === 'walk' ? '이동' : '휴식';
     this.panel.hidden = false;
     const wrapper = document.querySelector('#game-wrapper')!.getBoundingClientRect();
     const anchorX = footX - wrapper.left;
@@ -49,3 +50,4 @@ export class CharacterProfileTooltip {
     this.panel.style.setProperty('--tail-x', `${Math.max(18, Math.min(panelWidth - 18, anchorX - x))}px`);
   }
 }
+

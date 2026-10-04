@@ -1,30 +1,34 @@
-:root { font-family: 'Segoe UI', sans-serif; color: #deebe5; background: #0b141e; }
+@font-face { font-family: 'NeoDunggeunmo'; src: url('../assets/fonts/neodgm.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Galmuri11'; src: url('../assets/fonts/Galmuri11.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+:root { --font-body: 'Galmuri11', sans-serif; --font-display: 'NeoDunggeunmo', sans-serif; font-family: var(--font-body); font-synthesis: none; color: #deebe5; background: #0b141e; }
 body { margin: 0; }
+h1, h2, h3, h4, h5, h6, strong, b, .text-emphasis { font-family: var(--font-display); font-weight: 400; }
 main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
 header > p:first-child { color: #89b99e; font-size: 12px; letter-spacing: 3px; }
 h1 { font-size: 32px; margin: 12px 0; }
 header p, #status { color: #a8beb5; line-height: 1.6; }
 #game { width: 100%; aspect-ratio: 16 / 9; margin-top: 28px; border: 1px solid #345246; border-radius: 14px; overflow: hidden; }
 canvas { display: block; }
-button { background: #25473e; color: #deebe5; border: 1px solid #4e7764; border-radius: 6px; padding: 9px 14px; cursor: pointer; }
+button { font: inherit; background: #25473e; color: #deebe5; border: 1px solid #4e7764; border-radius: 6px; padding: 9px 14px; cursor: pointer; }
 button:hover { background: #345e4e; }
 #game { touch-action: none; cursor: default; }
 #game-wrapper { position: relative; }
 #minimap { position: absolute; left: 12px; bottom: 12px; width: clamp(140px, 24%, 220px); padding: 8px; border: 1px solid #537766; border-radius: 8px; background: #0b1825ed; pointer-events: auto; }
 #minimap svg { cursor: crosshair; touch-action: manipulation; }
 #minimap svg { display: block; width: 100%; height: auto; }
-.minimap-title, .minimap-legend { font-size: 11px; color: #bfd3c8; }
+.minimap-title, .minimap-legend { font-size: 12px; color: #bfd3c8; }
 .minimap-legend { display: flex; align-items: center; gap: 5px; }
 .camera-key { width: 9px; height: 6px; border: 1px solid white; }
 .character-key { width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: #39ff14; }
 #character-profile { position: absolute; z-index: 5; width: min(208px, calc(100% - 48px)); padding: 14px 16px; color: #17382f; background: #fffbed; border: 2px solid #274c40; border-radius: 18px; box-shadow: 0 5px 15px #0004; pointer-events: none; }
 #character-profile[hidden] { display: none; }
-#character-profile strong { display: block; font-size: 18px; margin-bottom: 9px; }
+#character-profile strong { display: block; font-size: 16px; margin-bottom: 9px; }
 #character-profile dl { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin: 0; font-size: 12px; }
 #character-profile dt { color: #597366; }
-#character-profile dd { margin: 0; text-align: right; font-weight: 600; }
+#character-profile dd { margin: 0; text-align: right; font-family: var(--font-display); font-weight: 400; }
 #character-profile::before, #character-profile::after { content: ''; position: absolute; left: var(--tail-x, 50%); width: 0; height: 0; transform: translateX(-50%); border-left: 11px solid transparent; border-right: 11px solid transparent; }
 #character-profile::before { bottom: -17px; border-top: 17px solid #274c40; }
 #character-profile::after { bottom: -13px; border-top: 14px solid #fffbed; }
 #character-profile.below::before { bottom: auto; top: -17px; border-top: 0; border-bottom: 17px solid #274c40; }
 #character-profile.below::after { bottom: auto; top: -13px; border-top: 0; border-bottom: 14px solid #fffbed; }
+

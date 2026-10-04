@@ -20,8 +20,8 @@ export class CharacterRenderer {
       .setOrigin(CHARACTER_ASSETS.originX, CHARACTER_ASSETS.originY)
       .setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height)
       .setDepth(footY);
-    const label = scene.add.text(p.x, footY + 12, character.direction, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#fff0b3', backgroundColor: '#152e28',
+    const label = scene.add.text(p.x, footY + 12, character.profile?.name ?? character.id, {
+      fontFamily: 'Galmuri11', fontSize: '12px', color: '#fff0b3', backgroundColor: '#152e28',
       padding: { x: 5, y: 2 },
     }).setOrigin(0.5, 0).setDepth(100000);
     return { sprite, label };
@@ -33,6 +33,8 @@ export class CharacterRenderer {
     visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture('mito-idle-' + character.direction);
     // Temporary walking motion using the same eight replaceable images.
     visual.sprite.setRotation(character.state === 'walk' ? Math.sin(time / 90) * 0.035 : 0);
-    visual.label.setPosition(p.x, footY + 12).setText(`${character.direction} · ${character.state === 'walk' ? '이동' : '휴식'}`);
+    visual.label.setPosition(p.x, footY + 12).setText(character.profile?.name ?? character.id);
   }
 }
+
+
