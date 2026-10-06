@@ -32,3 +32,8 @@ button:hover { background: #345e4e; }
 #character-profile.below::before { bottom: auto; top: -17px; border-top: 0; border-bottom: 17px solid #274c40; }
 #character-profile.below::after { bottom: auto; top: -13px; border-top: 0; border-bottom: 14px solid #fffbed; }
 
+.minimap-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#minimap-toggle { font-size: 12px; padding: 2px 7px; min-width: 28px; min-height: 28px; }
+#minimap.minimized { width: auto; }
+#minimap-content[hidden] { display: none; }
+#minimap-focus-character { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 5px; }

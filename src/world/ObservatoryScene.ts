@@ -5,6 +5,7 @@ import { MapCamera } from '../camera/MapCamera';
 import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
 import type { Character } from '../entities/Character';
+import { CHARACTER_ASSETS } from '../rendering/CharacterAssets';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';
 import { Minimap } from '../ui/Minimap';
@@ -77,6 +78,19 @@ export class ObservatoryScene extends Phaser.Scene {
       this.drag = null;
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
       clearEdge();
+    }, { signal: controls.signal });
+    canvas.addEventListener('dblclick', event => {
+      if (event.button !== 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const bounds = this.view.bounds(this.scale.width, this.scale.height);
+      const x = bounds.left + (event.clientX - rect.left) / rect.width * (bounds.right - bounds.left);
+      const y = bounds.top + (event.clientY - rect.top) / rect.height * (bounds.bottom - bounds.top);
+      const target = this.characters.find(({ visual }) => visual.sprite.getBounds().contains(x, y));
+      if (!target) return;
+      stop();
+      const position = worldToIso(target.model.worldX, target.model.worldY);
+      this.view.setZoom(this.view.zoom === 3 ? 1 : 3);
+      this.view.moveToIso(position.x, position.y + 16 + CHARACTER_ASSETS.height * (0.5 - CHARACTER_ASSETS.originY));
     }, { signal: controls.signal });
     canvas.addEventListener('lostpointercapture', () => { if (this.drag) stop(); }, { signal: controls.signal });
     canvas.addEventListener('pointerleave', clearEdge, { signal: controls.signal });
