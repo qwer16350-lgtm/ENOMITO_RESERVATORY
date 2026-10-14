@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 // Shared daylight palette: light arrives from upper-left; shadows fall lower-right.
-export const WORLD_LIGHT = { tint: 0xf3f1e8, shadow: 0x142b28, castAlpha: 0.36, contactAlpha: 0.39 };
+export const WORLD_LIGHT = { tint: 0xfff4df, shadow: 0x142b28, castAlpha: 0.36, contactAlpha: 0.39 };
 export function createContactShadow(scene: Phaser.Scene) {
   if (scene.textures.exists('ground-contact-shadow')) return;
   const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 32;
@@ -26,6 +26,3 @@ export function createTreeShadow(scene: Phaser.Scene, source: HTMLCanvasElement,
   context.fillStyle = '#142b28'; context.fillRect(0, 0, canvas.width, canvas.height);
   scene.textures.addCanvas(key, canvas)!.setFilter(Phaser.Textures.FilterMode.NEAREST);
 }
-
-
-

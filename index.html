@@ -11,6 +11,7 @@
       <nav aria-label="맵 조작"><button id="zoom-out" type="button">축소 −</button> <button id="zoom-in" type="button">확대 +</button> <button id="map-center" type="button">맵 중심으로</button> <button id="camera-follow" type="button" aria-pressed="false" aria-keyshortcuts="C" title="캐릭터 중심 고정 켜기/끄기 (C)">캐릭터 고정 OFF · C</button> <button id="world-reset" type="button">새 월드</button> <span id="world-seed"></span></nav>
       <div id="game-wrapper">
         <div id="game" aria-label="관측소 기본 화면"></div>
+        <div class="live-indicator" aria-label="LIVE"><span class="live-dot" aria-hidden="true"></span><span>LIVE</span></div>
         <div id="character-profile" role="tooltip" aria-label="캐릭터 프로필" hidden>
           <strong data-field="name"></strong>
           <dl><dt>나이 · 도착 후</dt><dd data-field="age"></dd><dt>유형</dt><dd data-field="type"></dd><dt>세대</dt><dd data-field="generation"></dd><dt>행동</dt><dd data-field="behavior"></dd></dl>
@@ -33,8 +34,3 @@
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-
-
-
-
-

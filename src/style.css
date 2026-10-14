@@ -42,3 +42,39 @@ button:hover { background: #345e4e; }
 
 .rock-key { width: 7px; height: 7px; border-radius: 50%; background: #c6c6b5; flex-shrink: 0; }
 .minimap-legend { flex-wrap: wrap; }
+
+/* Pixel monitor housing stays outside the interactive viewport. */
+#game-wrapper {
+ margin-top: 42px;
+ border: 8px solid #34464b;
+ box-shadow: 0 0 0 3px #111c24, 0 0 0 7px #687b78, 0 0 0 10px #26353e,
+  0 0 0 13px #0a1119, 0 16px 0 13px #070d13, 0 24px 32px #0006;
+ background: #0a1419;
+}
+#game { margin-top: 0; border: 0; border-radius: 0; box-shadow: inset 0 0 0 2px #081116; }
+#game-wrapper::before {
+ content: ''; position: absolute; inset: -8px; pointer-events: none; z-index: 7;
+ background:
+  linear-gradient(#a0af9a,#a0af9a) 3px 3px / 5px 5px no-repeat,
+  linear-gradient(#a0af9a,#a0af9a) calc(100% - 3px) 3px / 5px 5px no-repeat,
+  linear-gradient(#a0af9a,#a0af9a) 3px calc(100% - 3px) / 5px 5px no-repeat,
+  linear-gradient(#a0af9a,#a0af9a) calc(100% - 3px) calc(100% - 3px) / 5px 5px no-repeat;
+ box-shadow: inset 0 3px #82918a, inset 3px 0 #60736e, inset 0 -3px #182a32, inset -3px 0 #1a2b34;
+}
+#status { margin-top: 42px; }
+#minimap { border-radius: 0; border: 2px solid #658375; box-shadow: 2px 2px #101f28; }
+@media (max-width: 600px) {
+ main { padding: 24px 20px; }
+ .live-indicator { right: 10px; top: 10px; }
+}
+
+.live-indicator {
+ position: absolute; top: 14px; right: 16px; z-index: 6;
+ display: flex; align-items: center; gap: 7px;
+ color: #e4f0e6; opacity: .65;
+ font: 12px var(--font-display); letter-spacing: 1px;
+ text-shadow: 1px 1px #101e19; pointer-events: none;
+}
+.live-dot { width: 6px; height: 6px; background: #32ed65; animation: live-blink 3s steps(1, end) infinite; }
+@keyframes live-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: .15; } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
