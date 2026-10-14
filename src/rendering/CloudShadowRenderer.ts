@@ -13,19 +13,27 @@ export class CloudShadowRenderer {
    const context=canvas.getContext('2d')!;
    let state=shape*9137+91;
    const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
-   const lobes=4+shape%5;
-   for(let i=0;i<lobes;i++){
-    const x=65+random()*126,y=50+random()*28,radius=24+random()*22;
-    const gradient=context.createRadialGradient(x,y,0,x,y,radius);
-    gradient.addColorStop(0,'rgba(18,35,39,0.8)');gradient.addColorStop(.5,'rgba(18,35,39,0.65)');gradient.addColorStop(1,'rgba(18,35,39,0)');
-    context.fillStyle=gradient;context.fillRect(x-radius,y-radius,radius*2,radius*2);
-   }
-   const pixels=context.getImageData(0,0,256,128);let left=256,top=128,right=0,bottom=0;
+   // A turbulent density field produces wispy edges and uneven cloud thickness.
+   const grids=[4,8,16,32].map(size=>({size,values:Array.from({length:(size+1)*(size+1)},()=>random())}));
+   const noise=(x:number,y:number)=>grids.reduce((sum,g,i)=>{
+    const gx=x/256*g.size,gy=y/128*g.size,ix=Math.floor(gx),iy=Math.floor(gy);
+    const smooth=(t:number)=>t*t*(3-2*t),tx=smooth(gx-ix),ty=smooth(gy-iy);
+    const at=(dx:number,dy:number)=>g.values[(iy+dy)*(g.size+1)+ix+dx]!;
+    return sum+((at(0,0)*(1-tx)+at(1,0)*tx)*(1-ty)+(at(0,1)*(1-tx)+at(1,1)*tx)*ty)*[.55,.27,.13,.05][i]!;
+   },0);
+   const masses=Array.from({length:4+shape%3},()=>({x:65+random()*125,y:40+random()*48,rx:24+random()*35,ry:16+random()*25}));
+   const pixels=context.createImageData(256,128);let left=256,top=128,right=0,bottom=0,maxAlpha=0;
    for(let y=0;y<128;y++)for(let x=0;x<256;x++){
-    const p=(y*256+x)*4;
-    pixels.data[p+3]=Math.min(255,Math.round(pixels.data[p+3]/.55));
-    if(pixels.data[p+3]>=16){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+    const n=noise(x,y),wx=x+(noise((x+57)%256,(y+31)%128)-.5)*26,wy=y+(n-.5)*20;
+    let density=0;
+    for(const m of masses){const d=((wx-m.x)/m.rx)**2+((wy-m.y)/m.ry)**2;density+=Math.exp(-d*1.8);}
+    const value=Math.max(0,Math.min(1,(density*(.55+n*.9)-.16)*1.3));
+    const alpha=Math.round(value*255),p=(y*256+x)*4;
+    pixels.data[p]=18;pixels.data[p+1]=35;pixels.data[p+2]=39;pixels.data[p+3]=alpha;
+    maxAlpha=Math.max(maxAlpha,alpha);
+    if(alpha>=8){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
    }
+   for(let p=3;p<pixels.data.length;p+=4)pixels.data[p]=Math.round(pixels.data[p]!/maxAlpha*255);
    context.putImageData(pixels,0,0);
    const cropped=document.createElement('canvas');cropped.width=right-left+1;cropped.height=bottom-top+1;
    cropped.getContext('2d')!.drawImage(canvas,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);
@@ -48,7 +56,3 @@ export class CloudShadowRenderer {
   this.scene.game.canvas.dataset.cloudShadows=String(this.visible.length);
  }
 }
-
-
-
-
