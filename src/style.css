@@ -8,7 +8,7 @@ header > p:first-child { color: #89b99e; font-size: 12px; letter-spacing: 3px; }
 h1 { font-size: 32px; margin: 12px 0; }
 header p, #status { color: #a8beb5; line-height: 1.6; }
 #game { width: 100%; aspect-ratio: 16 / 9; margin-top: 28px; border: 1px solid #345246; border-radius: 14px; overflow: hidden; }
-canvas { display: block; }
+canvas { display: block; image-rendering: pixelated; }
 button { font: inherit; background: #25473e; color: #deebe5; border: 1px solid #4e7764; border-radius: 6px; padding: 9px 14px; cursor: pointer; }
 button:hover { background: #345e4e; }
 #game { touch-action: none; cursor: default; }
@@ -37,3 +37,8 @@ button:hover { background: #345e4e; }
 #minimap.minimized { width: auto; }
 #minimap-content[hidden] { display: none; }
 #minimap-focus-character { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 5px; }
+
+.tree-key { width: 7px; height: 7px; border-radius: 50%; background: #80b85a; border: 1px solid #abd18b; flex-shrink: 0; }
+
+.rock-key { width: 7px; height: 7px; border-radius: 50%; background: #c6c6b5; flex-shrink: 0; }
+.minimap-legend { flex-wrap: wrap; }

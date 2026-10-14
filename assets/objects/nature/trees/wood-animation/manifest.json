@@ -1,0 +1,47 @@
+[
+  {
+    "kind": 0,
+    "width": 440,
+    "height": 508,
+    "branchGroups": 14,
+    "maxChangedPixels": 13568,
+    "frames": 72,
+    "resolution": 4
+  },
+  {
+    "kind": 1,
+    "width": 316,
+    "height": 544,
+    "branchGroups": 9,
+    "maxChangedPixels": 11856,
+    "frames": 72,
+    "resolution": 4
+  },
+  {
+    "kind": 2,
+    "width": 336,
+    "height": 384,
+    "branchGroups": 8,
+    "maxChangedPixels": 3680,
+    "frames": 72,
+    "resolution": 4
+  },
+  {
+    "kind": 3,
+    "width": 260,
+    "height": 368,
+    "branchGroups": 6,
+    "maxChangedPixels": 2144,
+    "frames": 72,
+    "resolution": 4
+  },
+  {
+    "kind": 4,
+    "width": 184,
+    "height": 280,
+    "branchGroups": 6,
+    "maxChangedPixels": 2176,
+    "frames": 72,
+    "resolution": 4
+  }
+]

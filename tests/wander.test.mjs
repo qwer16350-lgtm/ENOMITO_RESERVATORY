@@ -43,3 +43,11 @@ test('long wandering stays within all four map edges', () => {
     for(let i=0;i<20000;i++){b.update(100);assert.ok(c.worldX>=0&&c.worldX<=1023&&c.worldY>=0&&c.worldY<=1023);}
   }
 });
+test('automatic wandering sometimes runs at triple walking speed',()=>{
+ const c={id:'afk',worldX:500,worldY:500,direction:'S'};
+ const values=[0,0,0,.99];const b=new WanderBehavior(c,()=>values.shift()??0);
+ for(let i=0;i<6;i++)b.update(100);
+ assert.equal(c.state,'run');assert.ok(Math.abs(c.worldX-500-.72)<1e-8);
+ b.update(100);assert.ok(Math.abs(c.worldX-500-1.44)<1e-8);
+ b.update(100);assert.equal(c.worldX,502);assert.equal(c.state,'idle');
+});

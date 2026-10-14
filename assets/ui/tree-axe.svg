@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="22" viewBox="0 0 20 22" shape-rendering="crispEdges">
+<!-- Native pixel grid: iron socket, bevelled cutting edge, and wood grain. -->
+<path d="M8 4H12V21H11V22H8V20H7V17H8Z" fill="#342d29"/>
+<path d="M9 7H11V20H10V21H9Z" fill="#98673e"/>
+<path d="M9 9H10V14H9ZM9 17H10V20H9Z" fill="#c39156"/>
+<path d="M10 12H11V13H10ZM10 16H11V17H10Z" fill="#67462e"/>
+<path d="M2 2H8V1H12V3H15V4H17V5H19V7H20V10H19V12H17V13H14V12H12V10H8V9H2Z" fill="#263b43"/>
+<path d="M3 3H8V2H11V4H14V5H16V6H18V7H19V10H18V11H16V12H14V11H12V8H8V7H3Z" fill="#779294"/>
+<path d="M3 3H8V2H11V4H8V5H3Z" fill="#becfca"/>
+<path d="M12 4H14V5H16V6H18V7H19V9H17V7H15V6H12Z" fill="#dce8df"/>
+<path d="M17 9H19V10H18V11H16V12H14V11H15V10H17Z" fill="#b5c9c4"/>
+<path d="M12 7H14V9H16V10H14V11H12Z" fill="#536c73"/>
+<path d="M8 3H12V8H8Z" fill="#3e535b"/>
+<path d="M9 3H11V7H9Z" fill="#91aaa7"/>
+<path d="M9 4H10V6H9Z" fill="#d1dcd0"/>
+<path d="M3 6H7V7H3Z" fill="#59747b"/>
+</svg>

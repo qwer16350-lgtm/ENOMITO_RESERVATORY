@@ -1,11 +1,18 @@
+import {WindRenderer} from '../rendering/WindRenderer';
+import {CloudShadowRenderer} from '../rendering/CloudShadowRenderer';
+import { WaterRenderer } from '../rendering/WaterRenderer';
+import { RockRenderer } from '../rendering/RockRenderer';
 import Phaser from 'phaser';
 import { worldToIso, isoToWorld } from './Projection';
+import { WorldMaker } from './WorldMaker';
+import { NatureRenderer } from '../rendering/NatureRenderer';
 import { TileMap } from './TileMap';
 import { MapCamera } from '../camera/MapCamera';
 import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
 import type { Character } from '../entities/Character';
 import { CHARACTER_ASSETS } from '../rendering/CharacterAssets';
+import { TerrainRenderer } from '../rendering/TerrainRenderer';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';
 import { Minimap } from '../ui/Minimap';
@@ -13,30 +20,67 @@ import { CharacterProfileTooltip } from '../ui/CharacterProfile';
 
 export class ObservatoryScene extends Phaser.Scene {
   private map = new TileMap();
+  private world = WorldMaker.create((() => {
+    const seed = new URLSearchParams(location.search).get('seed');
+    return seed !== null && /^\d+$/.test(seed) ? Number(seed) : undefined;
+  })());
+  private nature = this.world.nature;
+  private rockRenderer!: RockRenderer;
+  private natureRenderer!: NatureRenderer;
   private minimap!: Minimap;
   private profileTooltip!: CharacterProfileTooltip;
   private characters: { model: Character; behavior: WanderBehavior; visual: ReturnType<typeof CharacterRenderer.create> }[] = [];
+  private followCharacter = false;
   private view = new MapCamera();
-  private grid!: Phaser.GameObjects.Graphics;
+  private windRenderer!:WindRenderer;
+  private cloudShadows!:CloudShadowRenderer;
+  private waterRenderer!: WaterRenderer;
+  private terrain!: TerrainRenderer;
+  private frameSamples = { elapsed: 0, count: 0, slow: 0 };
   private lastView = '';
+  private sprintHeld = false;
+  private movementKeys = new Set<string>();
   private edge = { x: 0, y: 0 };
   private inertia = new CameraInertia();
   private drag: { id: number; x: number; y: number; startX: number; startY: number; time: number; moved: boolean } | null = null;
   constructor() { super('observatory'); }
 
-  preload() { CharacterRenderer.preload(this); }
+  preload() { CharacterRenderer.preload(this); TerrainRenderer.preload(this); NatureRenderer.preload(this); RockRenderer.preload(this); WaterRenderer.preload(this); }
 
   create() {
-    this.grid = this.add.graphics();
-    this.grid.setDepth(-100000);
+    document.querySelector('#world-seed')!.textContent = '월드 시드 ' + this.world.seed;
+    this.game.canvas.dataset.worldSeed = String(this.world.seed);
+    this.terrain = new TerrainRenderer(this, this.nature.water);
+    this.natureRenderer = new NatureRenderer(this, this.nature);
+    this.rockRenderer = new RockRenderer(this, this.nature);
+    this.waterRenderer = new WaterRenderer(this, this.nature.water);
+    this.cloudShadows = new CloudShadowRenderer(this, this.world.seed);
+    this.windRenderer = new WindRenderer(this, this.world.seed);
     // One character uses all eight direction assets; not imported Tamagotchi seed data.
     const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle', profile: { name: '미토', arrivedAt: Date.now(), type: '기본형', generation: 1 } };
-    this.characters = [{ model: character, behavior: new WanderBehavior(character), visual: CharacterRenderer.create(this, character) }];
+    this.characters = [{ model: character, behavior: new WanderBehavior(character, Math.random, (x, y) => this.nature.blocked(x, y)), visual: CharacterRenderer.create(this, character) }];
     this.game.canvas.dataset.characters = '1';
-    this.minimap = new Minimap();
+    this.minimap = new Minimap(this.nature);
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _objects: unknown[], _dx: number, dy: number) => { this.inertia.stop(); this.view.setZoom(this.view.zoom * Math.exp(-dy * 0.001)); });
     const controls = new AbortController();
     const canvas = this.game.canvas;
+    const arrowKeys = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+    const clearMovement = () => { this.movementKeys.clear(); this.sprintHeld = false; };
+    window.addEventListener('keydown', event => {
+      this.sprintHeld = event.shiftKey;
+      const target = event.target;
+      if (event.key === 'Shift' || event.code === 'ShiftLeft' || event.code === 'ShiftRight') { this.sprintHeld = true; this.movementKeys.add(event.code === 'ShiftRight' || event.location === 2 ? 'ShiftRight' : 'ShiftLeft'); return; }
+      if (!arrowKeys.has(event.code) || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select'))) return;
+      event.preventDefault(); this.movementKeys.add(event.code);
+    }, { signal: controls.signal });
+    window.addEventListener('keyup', event => {
+      this.sprintHeld = event.shiftKey;
+      if (!event.shiftKey) { this.movementKeys.delete('ShiftLeft'); this.movementKeys.delete('ShiftRight'); }
+      if (this.movementKeys.delete(event.code)) event.preventDefault();
+    }, { signal: controls.signal });
+    window.addEventListener('blur', clearMovement, { signal: controls.signal });
+    document.addEventListener('visibilitychange', clearMovement, { signal: controls.signal });
     this.profileTooltip = new CharacterProfileTooltip(canvas, controls.signal);
     const clearEdge = () => { this.edge = { x: 0, y: 0 }; canvas.style.cursor = 'default'; };
     const stop = () => {
@@ -44,15 +88,29 @@ export class ObservatoryScene extends Phaser.Scene {
       if (this.drag && canvas.hasPointerCapture(this.drag.id)) canvas.releasePointerCapture(this.drag.id);
       this.drag = null;
     };
+    const followButton = document.querySelector<HTMLButtonElement>('#camera-follow')!;
+    const toggleFollow = () => {
+      stop(); this.followCharacter = !this.followCharacter;
+      followButton.setAttribute('aria-pressed', String(this.followCharacter));
+      followButton.textContent = `캐릭터 고정 ${this.followCharacter ? 'ON' : 'OFF'} · C`;
+    };
+    followButton.addEventListener('click', toggleFollow, { signal: controls.signal });
+    window.addEventListener('keydown', event => {
+      if (event.code !== 'KeyC' || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select'))) return;
+      event.preventDefault(); toggleFollow();
+    }, { signal: controls.signal });
     this.minimap.bindNavigation((x, y) => { stop(); this.view.moveToIso(x, y); }, stop, controls.signal);
     canvas.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || this.drag) return;
+      if (this.followCharacter || event.button !== 0 || this.drag) return;
       this.inertia.stop(); clearEdge();
       this.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, time: event.timeStamp, moved: false };
       canvas.setPointerCapture(event.pointerId);
       canvas.style.cursor = 'grabbing';
     }, { signal: controls.signal });
     canvas.addEventListener('pointermove', (event) => {
+      if (this.followCharacter) { clearEdge(); return; }
       const rect = canvas.getBoundingClientRect();
       const drag = this.drag;
       if (drag) {
@@ -100,14 +158,32 @@ export class ObservatoryScene extends Phaser.Scene {
     document.querySelector('#zoom-in')!.addEventListener('click', () => { stop(); this.view.setZoom(this.view.zoom * 1.25); }, { signal: controls.signal });
     document.querySelector('#zoom-out')!.addEventListener('click', () => { stop(); this.view.setZoom(this.view.zoom / 1.25); }, { signal: controls.signal });
     document.querySelector('#map-center')!.addEventListener('click', () => { stop(); this.view.center(); }, { signal: controls.signal });
+    document.querySelector('#world-reset')!.addEventListener('click', () => {
+      const url = new URL(location.href); url.searchParams.delete('seed'); location.assign(url.href);
+    }, { signal: controls.signal });
     this.events.once('shutdown', () => controls.abort());
     this.game.canvas.dataset.ready = 'true';
     this.update();
   }
 
   update(_time = 0, delta = 0) {
+    if (!document.hidden && delta > 0) {
+      this.frameSamples.elapsed += delta; this.frameSamples.count++;
+      if (delta > 33) this.frameSamples.slow++;
+      if (this.frameSamples.elapsed >= 1000) {
+        this.game.canvas.dataset.fps = String(Math.round(this.frameSamples.count * 1000 / this.frameSamples.elapsed));
+        this.game.canvas.dataset.slowFrames = String(this.frameSamples.slow);
+        this.frameSamples = { elapsed: 0, count: 0, slow: 0 };
+      }
+    }
     if (!document.hidden) for (const character of this.characters) {
-      character.behavior.update(delta);
+            const keys = this.movementKeys;
+      character.behavior.update(delta, [...keys].some(key => key.startsWith('Arrow')) ? {
+        run: this.sprintHeld || keys.has('ShiftLeft') || keys.has('ShiftRight'),
+        x: Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft')),
+        y: Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp')),
+      } : undefined);
+      if (this.nature.touchingTree(character.model.worldX, character.model.worldY)) character.model.treeContactUntil = _time + 500;
       CharacterRenderer.sync(character.model, character.visual, _time);
     }
     this.game.canvas.dataset.characterStates = JSON.stringify(this.characters.map(({ model }) => model));
@@ -120,36 +196,64 @@ export class ObservatoryScene extends Phaser.Scene {
       const step = 600 * Math.min(delta, 50) / 1000;
       this.view.pan(this.edge.x * step, this.edge.y * step);
     }
+    if (this.followCharacter && this.characters.length) {
+      this.inertia.stop(); this.edge = { x: 0, y: 0 };
+      const character = this.characters[0].model;
+      const position = worldToIso(character.worldX, character.worldY);
+      this.view.moveToIso(position.x, position.y + 16 + CHARACTER_ASSETS.height * (0.5 - CHARACTER_ASSETS.originY));
+    }
+    this.game.canvas.dataset.cameraFollow = String(this.followCharacter);
     this.game.canvas.dataset.motion = this.drag ? 'drag' : this.inertia.active ? 'inertia' : (this.edge.x || this.edge.y) ? 'edge' : 'idle';
     this.game.canvas.dataset.cameraX = String(this.view.x);
     this.game.canvas.dataset.cameraY = String(this.view.y);
     this.minimap.update(this.view.bounds(this.scale.width, this.scale.height), this.characters[0].model);
     this.profileTooltip.update(this.characters[0].model, this.view.bounds(this.scale.width, this.scale.height), this.game.canvas, !!this.drag);
+    this.terrain.updateWater(_time);
+    this.cloudShadows.update(_time,this.view.bounds(this.scale.width,this.scale.height));
+    this.windRenderer.update(_time,this.view.bounds(this.scale.width,this.scale.height));
     const key = `${this.view.x},${this.view.y},${this.view.zoom}`;
-    if (key === this.lastView) return;
+    if (key === this.lastView) {
+      this.waterRenderer.update(_time);
+      this.natureRenderer.updateSway(_time);
+      this.natureRenderer.updateOcclusion(this.characters.map(c => c.visual.sprite), _time);
+      return;
+    }
     this.lastView = key;
     const camera = this.cameras.main;
     camera.setZoom(this.view.zoom).centerOn(this.view.x, this.view.y);
     const tiles = this.map.visibleTiles(this.view.bounds(camera.width, camera.height));
-    const grid = this.grid;
-    grid.clear();
-    for (const { x, y } of tiles) {
-        const iso = worldToIso(x, y);
-        const px = iso.x;
-        const py = iso.y;
-        grid.fillStyle((x + y) % 2 ? 0x25473e : 0x2b5146);
-        grid.lineStyle(1, (x % 32 === 0 || y % 32 === 0) ? 0x85b899 : 0x4e7764, 0.7);
-        grid.beginPath();
-        grid.moveTo(px, py);
-        grid.lineTo(px + 32, py + 16);
-        grid.lineTo(px, py + 32);
-        grid.lineTo(px - 32, py + 16);
-        grid.closePath();
-        grid.fillPath();
-        grid.strokePath();
-    }
+    this.terrain.draw(tiles);
+    this.natureRenderer.draw(this.view.bounds(camera.width, camera.height));
+    this.rockRenderer.draw(this.view.bounds(camera.width, camera.height));
+    this.waterRenderer.draw(this.view.bounds(camera.width, camera.height));
+    this.waterRenderer.update(_time);
+    this.natureRenderer.updateSway(_time);
+    this.natureRenderer.updateOcclusion(this.characters.map(c => c.visual.sprite), _time);
     const center = isoToWorld(this.view.x, this.view.y - 16);
     document.querySelector('#status')!.textContent = `1024 × 1024타일 · 총 1,048,576칸 · 현재 표시 ${tiles.length.toLocaleString()}칸 · 중심 (${Math.round(center.x)}, ${Math.round(center.y)}) · 확대 ${Math.round(this.view.zoom * 100)}% · 시드 데이터 미주입`;
     this.game.canvas.dataset.visibleTiles = String(tiles.length);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

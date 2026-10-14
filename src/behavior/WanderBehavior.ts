@@ -16,22 +16,53 @@ export function restingDirection(direction: Direction, previous: 'N' | 'S' = 'S'
 }
 
 export class WanderBehavior {
+  private wanderingRun = false;
   private remaining: number;
   private target: { x: number; y: number } | null = null;
-  readonly speed = 1.2; // World tile units per second.
+  readonly speed = 2.4; // World tile units per second.
   private character: Character;
   private random: () => number;
+  private blocked: (x: number, y: number) => boolean;
   private restingFacing: 'N' | 'S';
 
-  constructor(character: Character, random: () => number = Math.random) {
-    this.character = character; this.random = random;
+  constructor(character: Character, random: () => number = Math.random, blocked: (x: number, y: number) => boolean = () => false) {
+    this.character = character; this.random = random; this.blocked = blocked;
     this.restingFacing = restingDirection(character.direction);
     character.state = 'idle';
     character.direction = this.restingFacing;
     this.remaining = 0.5 + random() * 3;
   }
 
-  update(deltaMs: number) {
+  private manual = false;
+  update(deltaMs: number, input?: { x: number; y: number; run?: boolean }) {
+    if (input) {
+      this.manual = true; this.target = null;
+      const c = this.character;
+      // Arrow directions are screen directions, inverse of the isometric projection.
+      const dx = input.x + input.y * 2, dy = input.y * 2 - input.x;
+      const length = Math.hypot(dx, dy);
+      if (!length) { c.state = 'idle'; c.direction = this.restingFacing; return; }
+      const step = this.speed * (input.run ? 3 : 1) * Math.min(100, Math.max(0, deltaMs)) / 1000;
+      const count = Math.max(1, Math.ceil(step / 0.05));
+      let moved = false;
+      for (let i = 0; i < count; i++) {
+        const x = c.worldX + dx / length * step / count;
+        const y = c.worldY + dy / length * step / count;
+        if (x < 0 || y < 0 || x > MAP_SIZE - 1 || y > MAP_SIZE - 1 || this.blocked(x, y)) break;
+        c.worldX = x; c.worldY = y; moved = true;
+      }
+      c.direction = movementDirection(dx, dy, c.direction);
+      this.restingFacing = restingDirection(c.direction, this.restingFacing);
+      c.state = moved ? (input.run ? 'run' : 'walk') : 'idle';
+      if (!moved) c.direction = this.restingFacing;
+      return;
+    }
+    if (this.manual) {
+      this.manual = false; this.target = null;
+      this.character.state = 'idle'; this.character.direction = this.restingFacing;
+      this.remaining = 1 + this.random() * 4;
+      return;
+    }
     const dt = Math.min(100, Math.max(0, deltaMs)) / 1000;
     const c = this.character;
     if (!this.target) {
@@ -41,20 +72,53 @@ export class WanderBehavior {
       const distance = 2 + this.random() * 8;
       const clamp = (v: number) => Math.max(0, Math.min(MAP_SIZE - 1, v));
       this.target = { x: clamp(c.worldX + Math.cos(angle) * distance), y: clamp(c.worldY + Math.sin(angle) * distance) };
-      c.state = 'walk';
+      this.wanderingRun = this.random() > .75;
+      c.state = this.wanderingRun ? 'run' : 'walk';
     }
+    const velocity = this.speed * (this.wanderingRun ? 3 : 1);
     const dx = this.target.x - c.worldX, dy = this.target.y - c.worldY;
     const distance = Math.hypot(dx, dy);
+    const step = Math.min(distance, velocity * dt);
+    const nextX = c.worldX + (distance ? dx / distance * step : 0);
+    const nextY = c.worldY + (distance ? dy / distance * step : 0);
+    const steps = Math.max(1, Math.ceil(step / 0.05));
+    let collision = false;
+    for (let i = 1; i <= steps; i++) {
+      if (this.blocked(c.worldX + (nextX - c.worldX) * i / steps, c.worldY + (nextY - c.worldY) * i / steps)) { collision = true; break; }
+    }
+    if (collision) {
+      this.target = null;
+      const away = Math.atan2(-dy, -dx);
+      for (let i = 0; i < 16; i++) {
+        const angle = away + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * Math.PI / 8;
+        const ux = Math.cos(angle), uy = Math.sin(angle);
+        if ([0.05, 0.15, 0.35, 0.65].some(d => this.blocked(c.worldX + ux * d, c.worldY + uy * d))) continue;
+        this.target = { x: c.worldX + ux * 0.65, y: c.worldY + uy * 0.65 };
+        c.direction = movementDirection(ux, uy, c.direction);
+        this.restingFacing = restingDirection(c.direction, this.restingFacing);
+        c.state = this.wanderingRun ? 'run' : 'walk';
+        c.worldX += ux * Math.min(step, 0.05); c.worldY += uy * Math.min(step, 0.05);
+        return;
+      }
+      c.state = 'idle'; this.remaining = 0; return;
+    }
     c.direction = movementDirection(dx, dy, c.direction);
     this.restingFacing = restingDirection(c.direction, this.restingFacing);
-    if (distance <= this.speed * dt) {
+    if (distance <= velocity * dt) {
       c.worldX = this.target.x; c.worldY = this.target.y;
       this.target = null; c.state = 'idle';
       c.direction = this.restingFacing;
       this.remaining = 1 + this.random() * 4;
     } else {
-      c.worldX += dx / distance * this.speed * dt;
-      c.worldY += dy / distance * this.speed * dt;
+      c.worldX += dx / distance * velocity * dt;
+      c.worldY += dy / distance * velocity * dt;
     }
   }
 }
+
+
+
+
+
+
+
