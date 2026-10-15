@@ -34,7 +34,7 @@ export class CharacterRenderer {
     }
     IDLE_ASSETS.forEach(({key})=>{softenIdleOutline(scene,key);scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);});
     createContactShadow(scene);
-    const groundShadow = scene.add.image(p.x, footY - 1, 'ground-contact-shadow').setDisplaySize(36, 13).setDepth(-99997);
+    const groundShadow = scene.add.image(p.x, footY - 1, 'ground-contact-shadow').setDisplaySize(36 * 1.2, 13 * 1.2).setDepth(-99997);
     const sprite = scene.add.image(p.x, footY, 'mito-idle-' + character.direction)
       .setOrigin(CHARACTER_ASSETS.originX, CHARACTER_ASSETS.originY)
       .setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height)
@@ -91,7 +91,7 @@ export class CharacterRenderer {
       const lift = (1 - Math.cos(time / 90 * 2)) / 2;
       shadowWidth -= lift; shadowAlpha = 1 - lift * 0.04;
     }
-    visual.groundShadow.setDisplaySize(shadowWidth, shadowHeight).setAlpha(shadowAlpha);
+    visual.groundShadow.setDisplaySize(shadowWidth * 1.2, shadowHeight * 1.2).setAlpha(shadowAlpha);
     const texture = idle?.texture ?? (running ? `mito-run-${direction}-${Math.floor(time / MITO_ANIMATION.run.frameMs) % MITO_ANIMATION.run.frames}` : 'mito-idle-' + direction);
     visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture(texture).setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height);
     const dx = p.x - visual.previous.x, dy = footY - visual.previous.y;

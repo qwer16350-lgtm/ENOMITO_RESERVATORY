@@ -84,6 +84,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.profileTooltip = new CharacterProfileTooltip(canvas, controls.signal);
     const clearEdge = () => { this.edge = { x: 0, y: 0 }; canvas.style.cursor = 'default'; };
     const stop = () => {
+      this.view.stopTransition();
       this.inertia.stop(); clearEdge();
       if (this.drag && canvas.hasPointerCapture(this.drag.id)) canvas.releasePointerCapture(this.drag.id);
       this.drag = null;
@@ -104,7 +105,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.minimap.bindNavigation((x, y) => { stop(); this.view.moveToIso(x, y); }, stop, controls.signal);
     canvas.addEventListener('pointerdown', (event) => {
       if (this.followCharacter || event.button !== 0 || this.drag) return;
-      this.inertia.stop(); clearEdge();
+      this.view.stopTransition(); this.inertia.stop(); clearEdge();
       this.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, time: event.timeStamp, moved: false };
       canvas.setPointerCapture(event.pointerId);
       canvas.style.cursor = 'grabbing';
@@ -147,8 +148,7 @@ export class ObservatoryScene extends Phaser.Scene {
       if (!target) return;
       stop();
       const position = worldToIso(target.model.worldX, target.model.worldY);
-      this.view.setZoom(this.view.zoom === 3 ? 1 : 3);
-      this.view.moveToIso(position.x, position.y + 16 + CHARACTER_ASSETS.height * (0.5 - CHARACTER_ASSETS.originY));
+      this.view.animateTo(position.x, position.y + 16 + CHARACTER_ASSETS.height * (0.5 - CHARACTER_ASSETS.originY), this.view.zoom >= 2.99 ? 1 : 3);
     }, { signal: controls.signal });
     canvas.addEventListener('lostpointercapture', () => { if (this.drag) stop(); }, { signal: controls.signal });
     canvas.addEventListener('pointerleave', clearEdge, { signal: controls.signal });
@@ -202,6 +202,7 @@ export class ObservatoryScene extends Phaser.Scene {
       const position = worldToIso(character.worldX, character.worldY);
       this.view.moveToIso(position.x, position.y + 16 + CHARACTER_ASSETS.height * (0.5 - CHARACTER_ASSETS.originY));
     }
+    if (!document.hidden) this.view.updateTransition(delta);
     this.game.canvas.dataset.cameraFollow = String(this.followCharacter);
     this.game.canvas.dataset.motion = this.drag ? 'drag' : this.inertia.active ? 'inertia' : (this.edge.x || this.edge.y) ? 'edge' : 'idle';
     this.game.canvas.dataset.cameraX = String(this.view.x);
@@ -230,30 +231,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.natureRenderer.updateSway(_time);
     this.natureRenderer.updateOcclusion(this.characters.map(c => c.visual.sprite), _time);
     const center = isoToWorld(this.view.x, this.view.y - 16);
-    document.querySelector('#status')!.textContent = `1024 × 1024타일 · 총 1,048,576칸 · 현재 표시 ${tiles.length.toLocaleString()}칸 · 중심 (${Math.round(center.x)}, ${Math.round(center.y)}) · 확대 ${Math.round(this.view.zoom * 100)}% · 시드 데이터 미주입`;
+    document.querySelector('#status')!.textContent = `(${Math.round(center.x)}, ${Math.round(center.y)})`;
     this.game.canvas.dataset.visibleTiles = String(tiles.length);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
