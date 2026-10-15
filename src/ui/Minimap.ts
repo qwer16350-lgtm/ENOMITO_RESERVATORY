@@ -71,14 +71,28 @@ export class Minimap {
     svg.setAttribute('title', '나무 한 그루당 초록 점 하나 · 휠로 미니맵 확대/축소');
     const toggle = panel.querySelector<HTMLButtonElement>('#minimap-toggle')!;
     const content = panel.querySelector<HTMLElement>('#minimap-content')!;
-    const toggleMinimap = () => {
-      content.hidden = !content.hidden;
-      panel.classList.toggle('minimized', content.hidden);
-      toggle.setAttribute('aria-expanded', String(!content.hidden));
-      toggle.setAttribute('aria-label', content.hidden ? '미니맵 펼치기' : '미니맵 최소화');
-      toggle.textContent = content.hidden ? '+' : '−';
-      stop();
+    let mode=0;
+    const applyMode=()=>{
+      content.hidden=mode===0;
+      panel.classList.toggle('minimized',mode===0);
+      panel.classList.toggle('maximized',mode===2);
+      panel.dataset.mode=['collapsed','compact','expanded'][mode];
+      this.dot.setAttribute('r',mode===2?'0.65':'1.8');
+      this.box.setAttribute('stroke-width',mode===2?'0.3':'1.2');
+      const trees=panel.querySelector('#minimap-trees');
+      const rocks=panel.querySelector('#minimap-rocks');
+      for(const layer of [trees,rocks]){
+        layer?.setAttribute('stroke',layer.getAttribute('fill')!);
+        layer?.setAttribute('stroke-width',mode===2?'0.16':'0');
+        layer?.setAttribute('stroke-linejoin','round');
+      }
+      toggle.setAttribute('aria-expanded',String(mode!==0));
+      toggle.setAttribute('aria-label',['미니맵 펼치기','전체 지도 확대','지도 접기'][mode]!);
+      toggle.textContent=['+','□','−'][mode]!;
+      zoom=1;viewX=0;viewY=0;svg.setAttribute('viewBox','0 0 220 130');
     };
+    const toggleMinimap = () => {mode=(mode+1)%3;applyMode();stop();};
+    applyMode();
     toggle.addEventListener('click', toggleMinimap, { signal });
     window.addEventListener('keydown', event => {
       const target = event.target;
@@ -117,9 +131,3 @@ export class Minimap {
     this.dot.setAttribute('cy', String(marker.y));
   }
 }
-
-
-
-
-
-

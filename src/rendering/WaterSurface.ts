@@ -1,3 +1,4 @@
+import {WaterSampleCache} from './WaterSampleCache';
 import {shoreWaveAlpha} from './ShoreWave';
 import {WORLD_LIGHT} from './WorldLighting';
 import Phaser from 'phaser';
@@ -6,6 +7,7 @@ import {isoToWorld} from '../world/Projection';
 export class WaterSurface {
  private texture:Phaser.Textures.CanvasTexture;
  private image:Phaser.GameObjects.Image;
+ private sampleCache=new WaterSampleCache();
  private key='';private frame=-1;
  private data:ImageData;private samples:number[]=[];private shores:number[]=[];
  constructor(private scene:Phaser.Scene,private water:WaterWorld,private frames:Uint8ClampedArray[]){
@@ -16,16 +18,22 @@ export class WaterSurface {
  }
  update(time:number){
   const view=this.scene.cameras.main.worldView;
-  const left=Math.floor(view.left/16)*16-16,top=Math.floor(view.top/16)*16-16;
-  const width=Math.ceil((view.width+48)/2),height=Math.ceil((view.height+48)/2);
+  const left=Math.floor(view.left/64)*64-64,top=Math.floor(view.top/64)*64-64;
+  const width=Math.ceil((view.width+192)/2),height=Math.ceil((view.height+192)/2);
   const key=`${left},${top},${width},${height}`;
   if(key!==this.key){
-   this.key=key;this.texture.setSize(width,height);this.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+   this.key=key;
+   if(this.texture.width!==width||this.texture.height!==height){this.texture.setSize(width,height);this.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);}
    this.data=this.texture.context.createImageData(width,height);this.samples=[];this.shores=[];
+   const distances=this.sampleCache.build(left,top,width,height,(isoX,isoY)=>{
+    const world=isoToWorld(isoX,isoY);
+    return world.x<0||world.y<0||world.x>=1024||world.y>=1024?Infinity:this.water.distance(world.x,world.y);
+   });
    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const distance=distances[y*width+x];if(!Number.isFinite(distance))continue;
     const world=isoToWorld(left+x*2+1,top+y*2+1);
     if(world.x<0||world.y<0||world.x>=1024||world.y>=1024)continue;
-    const distance=this.water.distance(world.x,world.y);
+
     if(distance>=-.65){
       if(distance<=.1)this.shores.push((y*width+x)*4,distance,world.x*.035+world.y*.025);
       continue;
@@ -42,6 +50,8 @@ export class WaterSurface {
     const p=this.shores[i],alpha=shoreWaveAlpha(this.shores[i+1],this.shores[i+2],frame*180);
     this.data.data[p]=128;this.data.data[p+1]=161;this.data.data[p+2]=142;this.data.data[p+3]=Math.round(alpha*255);
   }
+  if(!this.samples.length&&!this.shores.length){this.image.setVisible(false);return;}
+  this.image.setVisible(true);
   this.texture.context.putImageData(this.data,0,0);this.texture.refresh();
   this.scene.game.canvas.dataset.surfaceFrame=String(frame);
  }

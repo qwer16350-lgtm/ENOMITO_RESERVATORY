@@ -6,3 +6,5 @@
 
 임시 프로필 모델은 name, arrivedAt(Unix 밀리초), type, generation입니다. 실제 인계 계약은 아직 확정되지 않았습니다. 데모는 미토/기본형/1세대이며 arrivedAt은 화면 시작 시각입니다. 저장하지 않아 새로고침 시 초기화됩니다. 나이는 출생 나이가 아니라 관측소 도착 후 경과 시간입니다.
 월드 지형 생성 worldSeed는 uint32이며 다마고치 인계 시드와 별개의 값입니다. 월드 시드를 고정하면 나무 배치가 재현되며 현재는 저장하지 않습니다.
+RockObject.scale은 월드 시드로 결정되는0.72~1.0 배율이며 kind는0~4입니다. 표시와 충돌 크기에 함께 반영됩니다.
+ShrubObject는 id/kind(0~4)/x/y/radius/scale/mirror를 보관합니다. 실제 다마고치 데이터와 별개인 worldSeed 기반 자연물입니다.

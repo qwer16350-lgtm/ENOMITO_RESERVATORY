@@ -79,3 +79,5 @@ WorldLighting: 공통 tint #f3f1e8, 그림자 #142b28, 나무 투영 그림자 a
 - TerrainAssets.ts: 잔디5종 파일 목록과 공통 색보정. 물가 합성도 같은 텍스처를 사용합니다.
 
 동일 규격 파일 교체는 assets/에서 진행합니다. 프레임 수를 바꾸면 AnimationConfig.ts와 assets-source/mito/build_smooth_idle.py의 생성 개수를 함께 맞추고 npm test 및 npm run build로 확인합니다. Renderer는 에셋 준비 처리가 아닌 배치·깊이·현재 프레임 표시를 담당합니다. 기존 자연물·수면의 전용 생성 모듈은 유지합니다.
+돌5종: 기존 boulder.png가 최대160×112, 추가 boulder-1~4.png는 판석138×78/갈라진 돌120×98/둥근 돌104×74/돌무더기88×58 상한입니다. imagegen으로 기존 돌 화풍을 참조해 개별 제작하고 RockAssets에서 목록을 관리합니다. 런타임 nearest/공통 팔레트/밑면 절단을 공유합니다.
+관목5종은 assets/objects/nature/shrubs/shrub-0~4.png(둥근 관목/고사리형/직립형/꽃관목/열매관목)이며 imagegen으로 각각 제작했습니다. ShrubAssets에서 파일 목록, Shrubs에서 종류별 상한 크기를 수정합니다. 자연물 공통 nearest/팔레트 처리와 그림자를 공유합니다.

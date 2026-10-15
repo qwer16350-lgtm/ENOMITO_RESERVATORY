@@ -78,3 +78,32 @@ button:hover { background: #345e4e; }
 .live-dot { width: 6px; height: 6px; background: #32ed65; animation: live-blink 3s steps(1, end) infinite; }
 @keyframes live-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: .15; } }
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+#minimap .minimap-legend { display: none; }
+#minimap.maximized {
+ position: fixed; inset: 20px; width: auto; padding: 16px; z-index: 50;
+ display: flex; flex-direction: column; background: #0b1825f7;
+ box-shadow: 0 0 0 20px #060e17c9; box-sizing: border-box;
+}
+#minimap.maximized #minimap-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#minimap.maximized svg { flex: 1; min-height: 0; width: 100%; height: 100%; }
+#minimap.maximized .minimap-legend { display: flex; justify-content: center; gap: 10px; padding-top: 12px; }
+.water-key { width: 8px; height: 8px; background: #417c7c; flex-shrink: 0; }
+
+#loading-screen {
+ position: absolute; inset: 0; z-index: 40; background: #0b1922;
+ display: flex; flex-direction: column; align-items: center; justify-content: center;
+ gap: 12px; color: #bdd3bf; opacity: 1; transition: opacity .35s ease;
+ background-image: linear-gradient(#8db59c05 1px, transparent 1px);
+ background-size: 100% 4px;
+}
+#loading-screen.connected { opacity: 0; pointer-events: none; }
+.boot-label { font: 10px var(--font-display); letter-spacing: 2px; color: #698b7c; }
+.boot-mito { width: 72px; height: 72px; image-rendering: pixelated; animation: boot-breathe 2.8s ease-in-out infinite; }
+#loading-screen h2 { font-size: clamp(12px,2vw,18px); margin: 0; }
+#loading-stage { font-size: 11px; margin: 0; color: #88a99b; }
+.boot-progress { width: min(260px,65%); height: 12px; padding: 3px; border: 2px solid #527566; background: #071016; }
+.boot-progress span { display: block; height: 100%; width: var(--progress,0%); background: repeating-linear-gradient(90deg,#8fbc89 0 8px,transparent 8px 11px); }
+.boot-live { font: 10px var(--font-display); color: #76b084; letter-spacing: 1px; }
+@keyframes boot-breathe { 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .boot-mito { animation: none; } #loading-screen { transition: none; } }

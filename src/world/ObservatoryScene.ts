@@ -1,3 +1,5 @@
+import {loadingProgress,finishLoading,failLoading} from '../ui/LoadingScreen';
+import {ShrubRenderer} from '../rendering/ShrubRenderer';
 import {WindRenderer} from '../rendering/WindRenderer';
 import {CloudShadowRenderer} from '../rendering/CloudShadowRenderer';
 import { WaterRenderer } from '../rendering/WaterRenderer';
@@ -25,6 +27,7 @@ export class ObservatoryScene extends Phaser.Scene {
     return seed !== null && /^\d+$/.test(seed) ? Number(seed) : undefined;
   })());
   private nature = this.world.nature;
+  private shrubRenderer!:ShrubRenderer;
   private rockRenderer!: RockRenderer;
   private natureRenderer!: NatureRenderer;
   private minimap!: Minimap;
@@ -45,14 +48,20 @@ export class ObservatoryScene extends Phaser.Scene {
   private drag: { id: number; x: number; y: number; startX: number; startY: number; time: number; moved: boolean } | null = null;
   constructor() { super('observatory'); }
 
-  preload() { CharacterRenderer.preload(this); TerrainRenderer.preload(this); NatureRenderer.preload(this); RockRenderer.preload(this); WaterRenderer.preload(this); }
+  preload() {
+    loadingProgress(5,'관측 이미지를 불러오는 중');
+    this.load.on('progress',(value:number)=>loadingProgress(5+value*80,'관측 이미지를 불러오는 중'));
+    this.load.on('loaderror',()=>failLoading());
+    CharacterRenderer.preload(this); TerrainRenderer.preload(this); NatureRenderer.preload(this); RockRenderer.preload(this); ShrubRenderer.preload(this); WaterRenderer.preload(this); }
 
   create() {
+    loadingProgress(88,'지형과 자연물을 준비하는 중');
     document.querySelector('#world-seed')!.textContent = '월드 시드 ' + this.world.seed;
     this.game.canvas.dataset.worldSeed = String(this.world.seed);
     this.terrain = new TerrainRenderer(this, this.nature.water);
     this.natureRenderer = new NatureRenderer(this, this.nature);
     this.rockRenderer = new RockRenderer(this, this.nature);
+    this.shrubRenderer = new ShrubRenderer(this,this.nature);
     this.waterRenderer = new WaterRenderer(this, this.nature.water);
     this.cloudShadows = new CloudShadowRenderer(this, this.world.seed);
     this.windRenderer = new WindRenderer(this, this.world.seed);
@@ -89,13 +98,9 @@ export class ObservatoryScene extends Phaser.Scene {
       if (this.drag && canvas.hasPointerCapture(this.drag.id)) canvas.releasePointerCapture(this.drag.id);
       this.drag = null;
     };
-    const followButton = document.querySelector<HTMLButtonElement>('#camera-follow')!;
     const toggleFollow = () => {
       stop(); this.followCharacter = !this.followCharacter;
-      followButton.setAttribute('aria-pressed', String(this.followCharacter));
-      followButton.textContent = `캐릭터 고정 ${this.followCharacter ? 'ON' : 'OFF'} · C`;
     };
-    followButton.addEventListener('click', toggleFollow, { signal: controls.signal });
     window.addEventListener('keydown', event => {
       if (event.code !== 'KeyC' || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
       const target = event.target;
@@ -155,15 +160,14 @@ export class ObservatoryScene extends Phaser.Scene {
     canvas.addEventListener('pointercancel', stop, { signal: controls.signal });
     window.addEventListener('blur', stop, { signal: controls.signal });
     document.addEventListener('visibilitychange', stop, { signal: controls.signal });
-    document.querySelector('#zoom-in')!.addEventListener('click', () => { stop(); this.view.setZoom(this.view.zoom * 1.25); }, { signal: controls.signal });
-    document.querySelector('#zoom-out')!.addEventListener('click', () => { stop(); this.view.setZoom(this.view.zoom / 1.25); }, { signal: controls.signal });
-    document.querySelector('#map-center')!.addEventListener('click', () => { stop(); this.view.center(); }, { signal: controls.signal });
     document.querySelector('#world-reset')!.addEventListener('click', () => {
       const url = new URL(location.href); url.searchParams.delete('seed'); location.assign(url.href);
     }, { signal: controls.signal });
     this.events.once('shutdown', () => controls.abort());
     this.game.canvas.dataset.ready = 'true';
     this.update();
+    loadingProgress(98,'미토의 관측 신호를 확인하는 중');
+    this.game.events.once('postrender',()=>finishLoading());
   }
 
   update(_time = 0, delta = 0) {
@@ -214,6 +218,8 @@ export class ObservatoryScene extends Phaser.Scene {
     this.windRenderer.update(_time,this.view.bounds(this.scale.width,this.scale.height));
     const key = `${this.view.x},${this.view.y},${this.view.zoom}`;
     if (key === this.lastView) {
+      this.shrubRenderer.updateInteraction(_time,delta,this.characters.map(c=>c.visual.sprite));
+
       this.waterRenderer.update(_time);
       this.natureRenderer.updateSway(_time);
       this.natureRenderer.updateOcclusion(this.characters.map(c => c.visual.sprite), _time);
@@ -226,6 +232,8 @@ export class ObservatoryScene extends Phaser.Scene {
     this.terrain.draw(tiles);
     this.natureRenderer.draw(this.view.bounds(camera.width, camera.height));
     this.rockRenderer.draw(this.view.bounds(camera.width, camera.height));
+    this.shrubRenderer.draw(this.view.bounds(camera.width,camera.height));
+    this.shrubRenderer.updateInteraction(_time,delta,this.characters.map(c=>c.visual.sprite));
     this.waterRenderer.draw(this.view.bounds(camera.width, camera.height));
     this.waterRenderer.update(_time);
     this.natureRenderer.updateSway(_time);

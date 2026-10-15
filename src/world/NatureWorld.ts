@@ -1,3 +1,4 @@
+import {ShrubWorld} from './Shrubs.ts';
 import {natureMirror} from './NatureVariation.ts';
 import { spawnTreeKeepChance } from './SpawnArea.ts';
 import { WaterWorld } from './WaterWorld.ts';
@@ -10,6 +11,7 @@ const RADII=[1.7,1.3,1,.76,.56];
 export class NatureWorld {
   private rockChunks=new Map<string,RockObject[]>();
   private chunks=new Map<string,NatureObject[]>();
+  readonly shrubs:ShrubWorld;
   readonly seed: number;
   readonly water: WaterWorld;
   constructor(seed=1) {
@@ -60,11 +62,11 @@ export class NatureWorld {
     let rockState=(this.seed^0x9e3779b9)>>>0;
     const rockRandom=()=>{rockState=(Math.imul(rockState,1664525)+1013904223)>>>0;return rockState/4294967296;};
     const placeRock=(x:number,y:number)=>{
-      const kind=Math.floor(rockRandom()*3),radius=ROCK_RADII[kind];
+      const kind=Math.floor(rockRandom()*ROCK_RADII.length),scale=.72+rockRandom()*.28,radius=ROCK_RADII[kind]*scale;
       if(x<0||y<0||x>=MAP_SIZE||y>=MAP_SIZE||Math.hypot(x-511.5,y-511.5)<radius+3||nearbyBig(x,y)||this.water.isWater(x,y,radius+.5))return;
       if(this.query(x-6,y-6,x+6,y+6).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+radius+.4))return;
       if(this.queryRocks(x-6,y-6,x+6,y+6).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+radius+.5))return;
-      const object={id:`rock:${this.seed}:${id++}`,kind,x,y,radius,mirror:natureMirror(this.seed,x,y,kind+5)};
+      const object={id:`rock:${this.seed}:${id++}`,kind,x,y,radius,scale,mirror:natureMirror(this.seed,x,y,kind+5)};
       const key=`${Math.floor(x/32)},${Math.floor(y/32)}`;const list=this.rockChunks.get(key)??[];list.push(object);this.rockChunks.set(key,list);
     };
     for(let i=0;i<2200;i++)placeRock(rockRandom()*MAP_SIZE,rockRandom()*MAP_SIZE);
@@ -72,6 +74,7 @@ export class NatureWorld {
       const x=rockRandom()*MAP_SIZE,y=rockRandom()*MAP_SIZE;
       for(let i=0;i<5;i++){const angle=rockRandom()*Math.PI*2,distance=rockRandom()*12;placeRock(x+Math.cos(angle)*distance,y+Math.sin(angle)*distance);}
     }
+    this.shrubs=new ShrubWorld(this.seed,this.water,(x,y,r)=>this.query(x-4,y-4,x+4,y+4).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+r+.15)||this.queryRocks(x-4,y-4,x+4,y+4).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+r+.2));
   }
   queryRocks(left:number,top:number,right:number,bottom:number){
     const result:RockObject[]=[];

@@ -18,6 +18,7 @@ export class WaterRenderer {
  private ripples:Phaser.GameObjects.Image[]=[];
  private ripplePoints:{x:number;y:number;phase:number}[]=[];
  private tick=-1;
+ private drawKey='';
  static preload(scene:Phaser.Scene){urls.forEach((url,i)=>scene.load.image(`water-decoration-${i}`,url));}
  constructor(private scene:Phaser.Scene,private water:WaterWorld){
   this.decorationWorld=new WaterDecorations(water);
@@ -30,6 +31,9 @@ export class WaterRenderer {
   graphics.destroy();
  }
  draw(view:ViewBounds){
+  const buffered={left:Math.floor(view.left/64)*64-64,top:Math.floor(view.top/64)*64-64,right:Math.ceil(view.right/64)*64+64,bottom:Math.ceil(view.bottom/64)*64+64};
+  const key=`${buffered.left},${buffered.top},${buffered.right},${buffered.bottom}`;
+  if(key===this.drawKey)return;this.drawKey=key;view=buffered;
   const corners=[isoToWorld(view.left-80,view.top-30),isoToWorld(view.right+80,view.top-30),isoToWorld(view.left-80,view.bottom+80),isoToWorld(view.right+80,view.bottom+80)];
   const left=Math.max(0,Math.min(...corners.map(p=>p.x))),right=Math.min(1023,Math.max(...corners.map(p=>p.x))),top=Math.max(0,Math.min(...corners.map(p=>p.y))),bottom=Math.min(1023,Math.max(...corners.map(p=>p.y)));
   this.objects=this.decorationWorld.query(left,top,right,bottom);
