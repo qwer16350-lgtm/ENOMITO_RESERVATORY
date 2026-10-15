@@ -11,7 +11,7 @@ import { MapCamera } from '../camera/MapCamera';
 import { edgeScroll } from '../camera/EdgeScroll';
 import { CameraInertia } from '../camera/CameraInertia';
 import type { Character } from '../entities/Character';
-import { CHARACTER_ASSETS } from '../rendering/CharacterAssets';
+import { CHARACTER_ASSETS } from '../assets/CharacterAssets';
 import { TerrainRenderer } from '../rendering/TerrainRenderer';
 import { CharacterRenderer } from '../rendering/CharacterRenderer';
 import { WanderBehavior } from '../behavior/WanderBehavior';

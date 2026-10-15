@@ -1,7 +1,7 @@
 import type { NatureWorld } from '../world/NatureWorld';
 import type { Character } from '../entities/Character';
 import type { ViewBounds } from '../world/TileMap';
-import { CHARACTER_ASSETS } from '../rendering/CharacterAssets';
+import { CHARACTER_ASSETS } from '../assets/CharacterAssets';
 import { worldToIso } from '../world/Projection';
 import { isoToMinimap, minimapToIso, MINIMAP_SCALE } from './MinimapProjection';
 

@@ -1,7 +1,7 @@
 import type { Character } from '../entities/Character';
 import type { ViewBounds } from '../world/TileMap';
 import { worldToIso } from '../world/Projection';
-import { CHARACTER_ASSETS } from '../rendering/CharacterAssets';
+import { CHARACTER_ASSETS } from '../assets/CharacterAssets';
 import { arrivalAge } from './ProfileTime';
 
 export class CharacterProfileTooltip {

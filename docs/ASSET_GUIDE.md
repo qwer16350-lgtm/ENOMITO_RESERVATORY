@@ -67,3 +67,15 @@ WorldLighting: 공통 tint #f3f1e8, 그림자 #142b28, 나무 투영 그림자 a
 지형/물: assets/terrain/water/water-surface.png, 64×64 반복 수면 원본 텍스처. 기본 image_gen 프롬프트: seamless top-down chunky pixel freshwater, muted matte teal, subtle ripples, no shore/ground/text. 생성 원본은 assets-source/terrain/water/water-source.png에 보존합니다. opposite edge 4px 패턴을 맞추고 런타임에서는 WORLD 좌표로 반복합니다. 해안선은 WaterTiles의 signed-distance 마스크로 모든 연결 형태를 생성하며 고정된 코너 파일에 의존하지 않습니다. 은은한 얕은 물과 젖은 흙 2단계 경계가 잔디와 연결됩니다.
 수생/물가 장식: assets/terrain/aquatic/{lily-pads,lotus,duckweed,cattails}.png와 assets/terrain/shore/{pebbles,sedge}.png. 기본 image_gen 도구로 동일한 픽셀 스타일의 2×3 투명 atlas를 제작했습니다. 프롬프트: isometric chunky matte woodland aquatic plants lily pads/lotus/duckweed/cattails and shore pebbles/sedge, separate sprites, transparent, no ground or shadow. 생성 원본과 런타임 분리 제작 스크립트는 assets-source/terrain/aquatic에 보존합니다. 표시 격자는 기존 지형/나무와 같은 약2px이며 수련류에는 작은 수면 부유 움직임을 적용합니다.
 구름 그림자10종은 CloudShadowRenderer에서 256×128 캔버스의 부드러운 겹침 음영으로 생성하는 코드 기반 효과입니다. 공유 텍스처10장, LINEAR 필터, 개체 alpha8~12.5%를 사용하며 실제 흰 구름 이미지는 표시하지 않습니다.
+
+## 에셋 모듈과 수정 위치
+
+실제 이미지 파일은 assets/, 제작 원본·생성 도구는 assets-source/, 런타임 에셋 목록과 준비 처리는 src/assets/에 둡니다.
+
+- CharacterAssets.ts: 8방향 기본 이미지와 표시 크기·발 피벗.
+- IdleAssets.ts / RunAssets.ts / WoodAnimationAssets.ts: 대기·달리기·목질부 이미지 목록.
+- AnimationConfig.ts: 미토 애니메이션 프레임 수, 시간, 웃음 진입·복귀 순서와 발생 간격.
+- IdleOutline.ts: 대기 외곽선 색보정. 원본 파일을 덮어쓰지 않습니다.
+- TerrainAssets.ts: 잔디5종 파일 목록과 공통 색보정. 물가 합성도 같은 텍스처를 사용합니다.
+
+동일 규격 파일 교체는 assets/에서 진행합니다. 프레임 수를 바꾸면 AnimationConfig.ts와 assets-source/mito/build_smooth_idle.py의 생성 개수를 함께 맞추고 npm test 및 npm run build로 확인합니다. Renderer는 에셋 준비 처리가 아닌 배치·깊이·현재 프레임 표시를 담당합니다. 기존 자연물·수면의 전용 생성 모듈은 유지합니다.

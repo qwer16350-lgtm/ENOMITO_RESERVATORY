@@ -1,5 +1,5 @@
 import { groundFootprint, projectShadowPoint, type GroundFootprint } from './ShadowAnchor';
-import { WOOD_ANIMATION } from './WoodAnimationAssets';
+import { WOOD_ANIMATION } from '../assets/WoodAnimationAssets';
 import { splitTreeLayers } from './TreeLayers';
 import { WORLD_LIGHT, createContactShadow, createTreeShadow } from './WorldLighting';
 import Phaser from 'phaser';

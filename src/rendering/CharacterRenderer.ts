@@ -1,14 +1,16 @@
+import { MITO_ANIMATION } from '../assets/AnimationConfig';
+import { softenIdleOutline } from '../assets/IdleOutline';
 import { IdleAnimator } from './IdleAnimator';
-import { IDLE_ASSETS } from './IdleAssets';
+import { IDLE_ASSETS } from '../assets/IdleAssets';
 import { WORLD_LIGHT, createContactShadow } from './WorldLighting';
 import bubbleUrl from '../../assets/ui/tree-bubble.svg?url&no-inline';
 import axeUrl from '../../assets/ui/tree-axe.svg?url&no-inline';
 import Phaser from 'phaser';
-import { RUN_ASSETS } from './RunAssets';
+import { RUN_ASSETS } from '../assets/RunAssets';
 import type { Character } from '../entities/Character';
 import { DIRECTIONS } from '../entities/Character';
 import { worldToIso } from '../world/Projection';
-import { CHARACTER_ASSETS } from './CharacterAssets';
+import { CHARACTER_ASSETS } from '../assets/CharacterAssets';
 
 export class CharacterRenderer {
   static preload(scene: Phaser.Scene) {
@@ -28,9 +30,9 @@ export class CharacterRenderer {
     const footY = p.y + 16;
     for (const direction of DIRECTIONS) {
       scene.textures.get('mito-idle-' + direction).setFilter(Phaser.Textures.FilterMode.NEAREST);
-      for (let frame=0;frame<4;frame++) scene.textures.get(`mito-run-${direction}-${frame}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      for (let frame=0;frame<MITO_ANIMATION.run.frames;frame++) scene.textures.get(`mito-run-${direction}-${frame}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
-    IDLE_ASSETS.forEach(({key})=>scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+    IDLE_ASSETS.forEach(({key})=>{softenIdleOutline(scene,key);scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);});
     createContactShadow(scene);
     const groundShadow = scene.add.image(p.x, footY - 1, 'ground-contact-shadow').setDisplaySize(36, 13).setDepth(-99997);
     const sprite = scene.add.image(p.x, footY, 'mito-idle-' + character.direction)
@@ -73,16 +75,16 @@ export class CharacterRenderer {
     // Keep the footprint on the ground; only its spread/strength follows body motion.
     let shadowWidth = 36, shadowHeight = 13, shadowAlpha = 1;
     if (idle?.kind === 'idle') {
-      const breath = (1 - Math.cos((Math.floor(time / 160) % 24) / 24 * Math.PI * 2)) / 2;
+      const breath = (1 - Math.cos((Math.floor(time / MITO_ANIMATION.breathe.frameMs) % MITO_ANIMATION.breathe.frames) / MITO_ANIMATION.breathe.frames * Math.PI * 2)) / 2;
       shadowWidth += breath * 2; shadowHeight += breath;
       shadowAlpha = 1 - breath * 0.06;
     } else if (idle?.kind === 'idle_2') {
       const frame = Number(idle.texture.split('-').pop());
-      const lift = (1 - Math.cos(frame / 8 * Math.PI * 2)) / 2;
+      const lift = (1 - Math.cos(frame / MITO_ANIMATION.smile.frames * Math.PI * 2)) / 2;
       shadowWidth += lift * 2; shadowHeight += lift;
       shadowAlpha = 1 - lift * 0.08;
     } else if (running) {
-      const lift = [0, 0.5, 1, 0.5][Math.floor(time / 75) % 4];
+      const lift = [0, 0.5, 1, 0.5][Math.floor(time / MITO_ANIMATION.run.frameMs) % MITO_ANIMATION.run.frames];
       shadowWidth -= lift * 5; shadowHeight -= lift * 2;
       shadowAlpha = 1 - lift * 0.22;
     } else if (character.state === 'walk') {
@@ -90,7 +92,7 @@ export class CharacterRenderer {
       shadowWidth -= lift; shadowAlpha = 1 - lift * 0.04;
     }
     visual.groundShadow.setDisplaySize(shadowWidth, shadowHeight).setAlpha(shadowAlpha);
-    const texture = idle?.texture ?? (running ? `mito-run-${direction}-${Math.floor(time / 75) % 4}` : 'mito-idle-' + direction);
+    const texture = idle?.texture ?? (running ? `mito-run-${direction}-${Math.floor(time / MITO_ANIMATION.run.frameMs) % MITO_ANIMATION.run.frames}` : 'mito-idle-' + direction);
     visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture(texture).setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height);
     const dx = p.x - visual.previous.x, dy = footY - visual.previous.y;
     const distance = Math.hypot(dx, dy);
@@ -116,19 +118,3 @@ export class CharacterRenderer {
     visual.label.setPosition(p.x, footY + 12).setText(character.profile?.name ?? character.id);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
