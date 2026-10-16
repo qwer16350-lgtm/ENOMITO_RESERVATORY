@@ -1,3 +1,4 @@
+import {WaterFootsteps} from '../rendering/WaterFootsteps';
 import {loadingProgress,finishLoading,failLoading} from '../ui/LoadingScreen';
 import {ShrubRenderer} from '../rendering/ShrubRenderer';
 import {WindRenderer} from '../rendering/WindRenderer';
@@ -37,6 +38,7 @@ export class ObservatoryScene extends Phaser.Scene {
   private view = new MapCamera();
   private windRenderer!:WindRenderer;
   private cloudShadows!:CloudShadowRenderer;
+  private waterFootsteps!:WaterFootsteps;
   private waterRenderer!: WaterRenderer;
   private terrain!: TerrainRenderer;
   private frameSamples = { elapsed: 0, count: 0, slow: 0 };
@@ -65,6 +67,7 @@ export class ObservatoryScene extends Phaser.Scene {
     this.waterRenderer = new WaterRenderer(this, this.nature.water);
     this.cloudShadows = new CloudShadowRenderer(this, this.world.seed);
     this.windRenderer = new WindRenderer(this, this.world.seed);
+    this.waterFootsteps=new WaterFootsteps(this,this.nature.water);
     // One character uses all eight direction assets; not imported Tamagotchi seed data.
     const character: Character = { id: 'mito-preview', worldX: 511.5, worldY: 511.5, direction: 'S', state: 'idle', profile: { name: '미토', arrivedAt: Date.now(), type: '기본형', generation: 1 } };
     this.characters = [{ model: character, behavior: new WanderBehavior(character, Math.random, (x, y) => this.nature.blocked(x, y)), visual: CharacterRenderer.create(this, character) }];
@@ -188,8 +191,9 @@ export class ObservatoryScene extends Phaser.Scene {
         y: Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp')),
       } : undefined);
       if (this.nature.touchingTree(character.model.worldX, character.model.worldY)) character.model.treeContactUntil = _time + 500;
-      CharacterRenderer.sync(character.model, character.visual, _time);
+      CharacterRenderer.sync(character.model, character.visual, _time,this.nature.water.distance(character.model.worldX,character.model.worldY));
     }
+    this.waterFootsteps.update(_time,this.characters.map(c=>c.model));
     this.game.canvas.dataset.characterStates = JSON.stringify(this.characters.map(({ model }) => model));
     if (!document.hidden && !this.drag && this.inertia.active) {
       const movement = this.inertia.step(delta);

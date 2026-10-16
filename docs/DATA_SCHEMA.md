@@ -8,3 +8,4 @@
 월드 지형 생성 worldSeed는 uint32이며 다마고치 인계 시드와 별개의 값입니다. 월드 시드를 고정하면 나무 배치가 재현되며 현재는 저장하지 않습니다.
 RockObject.scale은 월드 시드로 결정되는0.72~1.0 배율이며 kind는0~4입니다. 표시와 충돌 크기에 함께 반영됩니다.
 ShrubObject는 id/kind(0~4)/x/y/radius/scale/mirror를 보관합니다. 실제 다마고치 데이터와 별개인 worldSeed 기반 자연물입니다.
+Character.impact는 임시 시뮬레이션 상태(serial/ageMs/dx/dy)이며 충격 경과시간과 WORLD 후퇴 방향을 기록합니다. 저장/다마고치 인계 계약에는 포함하지 않습니다.

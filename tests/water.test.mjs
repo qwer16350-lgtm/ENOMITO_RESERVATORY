@@ -13,7 +13,7 @@ test('shared world-coordinate boundary is continuous and objects stay out of wat
  for(let x=0;x<1024;x+=32)for(let y=0;y<1024;y+=32)assert.ok(Math.abs(world.water.distance(x-.00001,y)-world.water.distance(x+.00001,y))<.001);
  world.visitAll(o=>assert.equal(world.water.isWater(o.x,o.y,1.5),false));
  world.visitRocks(o=>assert.equal(world.water.isWater(o.x,o.y,o.radius+.5),false));
- let found=false;for(let x=0;x<1024&&!found;x+=8)for(let y=0;y<1024;y+=8)if(world.water.isWater(x,y)){assert.equal(world.blocked(x,y),true);found=true;break;}assert.ok(found);
+ let found=false;for(let x=0;x<1024&&!found;x+=8)for(let y=0;y<1024;y+=8)if(world.water.isWater(x,y)){assert.equal(world.blocked(x,y),false);found=true;break;}assert.ok(found);
 });
 test('half-density water targets half the covered area rather than just feature count',()=>{
  for(const seed of [86780859,12345,42]){

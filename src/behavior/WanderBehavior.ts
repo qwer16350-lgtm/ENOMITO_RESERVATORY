@@ -34,7 +34,29 @@ export class WanderBehavior {
   }
 
   private manual = false;
+  private impactCooldown=0;
+  private impactSerial=0;
+  private collideRunning(dx:number,dy:number){
+    if(this.impactCooldown>0)return false;
+    const length=Math.hypot(dx,dy);if(!length)return false;
+    this.character.impact={serial:++this.impactSerial,ageMs:0,dx:-dx/length,dy:-dy/length};
+    this.character.state='idle';this.target=null;this.remaining=.6;this.impactCooldown=800;
+    return true;
+  }
   update(deltaMs: number, input?: { x: number; y: number; run?: boolean }) {
+    const elapsed=Math.min(100,Math.max(0,deltaMs));
+    this.impactCooldown=Math.max(0,this.impactCooldown-elapsed);
+    const impact=this.character.impact;
+    if(impact&&impact.ageMs<450){
+      const step=5*(Math.exp(-impact.ageMs/100)-Math.exp(-(impact.ageMs+elapsed)/100))*.1;
+      const count=Math.max(1,Math.ceil(step/.03));
+      for(let i=0;i<count;i++){
+        const x=this.character.worldX+impact.dx*step/count,y=this.character.worldY+impact.dy*step/count;
+        if(x<0||y<0||x>MAP_SIZE-1||y>MAP_SIZE-1||this.blocked(x,y))break;
+        this.character.worldX=x;this.character.worldY=y;
+      }
+      impact.ageMs+=elapsed;return;
+    }
     if (input) {
       this.manual = true; this.target = null;
       const c = this.character;
@@ -48,7 +70,10 @@ export class WanderBehavior {
       for (let i = 0; i < count; i++) {
         const x = c.worldX + dx / length * step / count;
         const y = c.worldY + dy / length * step / count;
-        if (x < 0 || y < 0 || x > MAP_SIZE - 1 || y > MAP_SIZE - 1 || this.blocked(x, y)) break;
+        if (x < 0 || y < 0 || x > MAP_SIZE - 1 || y > MAP_SIZE - 1 || this.blocked(x, y)) {
+          if(input.run&&this.blocked(x,y)&&this.collideRunning(dx,dy))return;
+          break;
+        }
         c.worldX = x; c.worldY = y; moved = true;
       }
       c.direction = movementDirection(dx, dy, c.direction);
@@ -72,7 +97,7 @@ export class WanderBehavior {
       const distance = 2 + this.random() * 8;
       const clamp = (v: number) => Math.max(0, Math.min(MAP_SIZE - 1, v));
       this.target = { x: clamp(c.worldX + Math.cos(angle) * distance), y: clamp(c.worldY + Math.sin(angle) * distance) };
-      this.wanderingRun = this.random() > .75;
+      this.wanderingRun = this.random() > .5;
       c.state = this.wanderingRun ? 'run' : 'walk';
     }
     const velocity = this.speed * (this.wanderingRun ? 3 : 1);
@@ -87,6 +112,7 @@ export class WanderBehavior {
       if (this.blocked(c.worldX + (nextX - c.worldX) * i / steps, c.worldY + (nextY - c.worldY) * i / steps)) { collision = true; break; }
     }
     if (collision) {
+      if(this.wanderingRun&&this.collideRunning(dx,dy))return;
       this.target = null;
       const away = Math.atan2(-dy, -dx);
       for (let i = 0; i < 16; i++) {
@@ -115,10 +141,3 @@ export class WanderBehavior {
     }
   }
 }
-
-
-
-
-
-
-

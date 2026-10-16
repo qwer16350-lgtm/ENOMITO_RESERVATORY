@@ -1,3 +1,6 @@
+import {prepareImpactAsset} from '../assets/ImpactAssets';
+import {immersionTarget,smoothImmersion} from './Immersion';
+import {wetCharacterTexture} from '../assets/WetCharacterAssets';
 import { MITO_ANIMATION } from '../assets/AnimationConfig';
 import { softenIdleOutline } from '../assets/IdleOutline';
 import { IdleAnimator } from './IdleAnimator';
@@ -33,12 +36,15 @@ export class CharacterRenderer {
       for (let frame=0;frame<MITO_ANIMATION.run.frames;frame++) scene.textures.get(`mito-run-${direction}-${frame}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
     IDLE_ASSETS.forEach(({key})=>{softenIdleOutline(scene,key);scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);});
+    prepareImpactAsset(scene);
     createContactShadow(scene);
     const groundShadow = scene.add.image(p.x, footY - 1, 'ground-contact-shadow').setDisplaySize(36 * 1.2, 13 * 1.2).setDepth(-99997);
     const sprite = scene.add.image(p.x, footY, 'mito-idle-' + character.direction)
       .setOrigin(CHARACTER_ASSETS.originX, CHARACTER_ASSETS.originY)
       .setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height)
       .setDepth(footY).setTint(WORLD_LIGHT.tint);
+    const dryOverlay=scene.add.image(p.x,footY,'mito-idle-'+character.direction).setOrigin(CHARACTER_ASSETS.originX,CHARACTER_ASSETS.originY).setTint(WORLD_LIGHT.tint).setVisible(false);
+    const impactFlash=scene.add.graphics().setDepth(100001);
     const label = scene.add.text(p.x, footY + 12, character.profile?.name ?? character.id, {
       fontFamily: 'Galmuri11', fontSize: '12px', color: '#fff0b3', backgroundColor: '#152e28',
       padding: { x: 5, y: 2 },
@@ -47,10 +53,13 @@ export class CharacterRenderer {
     const bubble = scene.add.image(0, 0, 'tree-contact-bubble').setOrigin(0.5, 0.5).setScale(0.8).setDepth(100001).setVisible(false);
     const axe = scene.add.image(0, 0, 'tree-contact-axe').setOrigin(0.5, 0.85).setDepth(100002).setVisible(false);
     bubble.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); axe.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    return { idleAnimator:new IdleAnimator(), sprite, label, dust, bubble, axe, groundShadow, popup: { target: false, start: 0, from: 0, scale: 0 }, previous: { x: p.x, y: footY }, lastDust: 0, nextDust: 0 };
+    return { impactFlash,dryOverlay,immersion:0,lastSync:0,idleAnimator:new IdleAnimator(), sprite, label, dust, bubble, axe, groundShadow, popup: { target: false, start: 0, from: 0, scale: 0 }, previous: { x: p.x, y: footY }, lastDust: 0, nextDust: 0 };
   }
 
-  static sync(character: Character, visual: ReturnType<typeof CharacterRenderer.create>, time = 0) {
+  static sync(character: Character, visual: ReturnType<typeof CharacterRenderer.create>, time = 0, waterDistance = Infinity) {
+    const inWater=waterDistance<0;
+    visual.immersion=smoothImmersion(visual.immersion,immersionTarget(waterDistance),Math.min(100,Math.max(0,time-visual.lastSync)));
+    visual.lastSync=time;
     const p = worldToIso(character.worldX, character.worldY);
     const footY = p.y + 16;
     visual.groundShadow.setPosition(p.x, footY - 1);
@@ -92,11 +101,12 @@ export class CharacterRenderer {
       shadowWidth -= lift; shadowAlpha = 1 - lift * 0.04;
     }
     visual.groundShadow.setDisplaySize(shadowWidth * 1.2, shadowHeight * 1.2).setAlpha(shadowAlpha);
-    const texture = idle?.texture ?? (running ? `mito-run-${direction}-${Math.floor(time / MITO_ANIMATION.run.frameMs) % MITO_ANIMATION.run.frames}` : 'mito-idle-' + direction);
-    visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture(texture).setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height);
+    const reacting=!!character.impact&&character.impact.ageMs<450;
+    const texture = reacting?'mito-impact':idle?.texture ?? (running ? `mito-run-${direction}-${Math.floor(time / MITO_ANIMATION.run.frameMs) % MITO_ANIMATION.run.frames}` : 'mito-idle-' + direction);
+    visual.sprite.setPosition(p.x, footY).setDepth(footY).setTexture(visual.immersion>0?wetCharacterTexture(visual.sprite.scene,texture):texture).setDisplaySize(CHARACTER_ASSETS.width, CHARACTER_ASSETS.height);
     const dx = p.x - visual.previous.x, dy = footY - visual.previous.y;
     const distance = Math.hypot(dx, dy);
-    if (running && distance > 0.001 && time - visual.lastDust >= 40) {
+    if (!inWater && running && distance > 0.001 && time - visual.lastDust >= 40) {
       const particle = visual.dust[visual.nextDust++ % visual.dust.length];
       particle.born = time;
       const side = visual.nextDust % 2 ? 1 : -1;
@@ -115,6 +125,18 @@ export class CharacterRenderer {
     visual.previous.x = p.x; visual.previous.y = footY;
     // Temporary walking motion using the same eight replaceable images.
     visual.sprite.setRotation(character.state === 'walk' ? Math.sin(time / 90) * 0.035 : 0);
+    visual.dryOverlay.setVisible(visual.immersion>0&&visual.immersion<1)
+      .setTexture(texture).setDisplaySize(CHARACTER_ASSETS.width,CHARACTER_ASSETS.height)
+      .setPosition(p.x,footY).setDepth(footY+.001).setRotation(visual.sprite.rotation).setAlpha(1-visual.immersion);
+    visual.impactFlash.clear();
+    if(reacting){
+      const age=character.impact!.ageMs/450,hit=worldToIso(-character.impact!.dx,-character.impact!.dy),length=Math.hypot(hit.x,hit.y)||1;
+      const x=p.x+hit.x/length*24,y=footY-23+hit.y/length*12;
+      for(let i=0;i<6;i++){
+        const angle=i/6*Math.PI*2,near=6+age*12,far=near+5*(1-age);
+        visual.impactFlash.lineStyle(2,0xffedb0,1-age).lineBetween(x+Math.cos(angle)*near,y+Math.sin(angle)*near,x+Math.cos(angle)*far,y+Math.sin(angle)*far);
+      }
+    }
     visual.label.setPosition(p.x, footY + 12).setText(character.profile?.name ?? character.id);
   }
 }

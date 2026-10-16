@@ -1,3 +1,4 @@
+import {GroundPatches,groundPatchWeight} from '../world/GroundPatches';
 import type { NatureWorld } from '../world/NatureWorld';
 import type { Character } from '../entities/Character';
 import type { ViewBounds } from '../world/TileMap';
@@ -14,9 +15,15 @@ export class Minimap {
     this.box = document.querySelector<SVGRectElement>('#minimap-camera')!;
     this.dot = document.querySelector<SVGCircleElement>('#minimap-character')!;
     const waterCanvas=document.createElement('canvas');waterCanvas.width=880;waterCanvas.height=520;
-    const waterContext=waterCanvas.getContext('2d')!;waterContext.scale(4,4);waterContext.fillStyle='#417c7c';
+    const waterContext=waterCanvas.getContext('2d')!;waterContext.scale(4,4);
+    const ground=new GroundPatches(nature.seed);
     for(let x=0;x<1024;x+=4)for(let y=0;y<1024;y+=4){
-      if(!nature.water.isWater(x+2,y+2,.8))continue;
+      const wet=nature.water.isWater(x+2,y+2,.8),weights=[0,0];
+      if(!wet)for(const patch of ground.nearby(x+2,y+2))weights[patch.kind]=Math.max(weights[patch.kind]!,groundPatchWeight(patch,x+2,y+2));
+      if(!wet&&Math.max(...weights)<.05)continue;
+      const base=[43,81,70],colors=[[55,94,75],[105,88,63]];
+      for(let kind=0;kind<2;kind++)for(let c=0;c<3;c++)base[c]=Math.round(base[c]!*(1-weights[kind]!)+colors[kind]![c]!*weights[kind]!);
+      waterContext.fillStyle=wet?'#417c7c':`rgb(${base.join(',')})`;
       const iso=worldToIso(x,y),point=isoToMinimap(iso.x,iso.y),dx=128*MINIMAP_SCALE,dy=64*MINIMAP_SCALE;
       waterContext.beginPath();waterContext.moveTo(point.x,point.y);waterContext.lineTo(point.x+dx,point.y+dy);waterContext.lineTo(point.x,point.y+dy*2);waterContext.lineTo(point.x-dx,point.y+dy);waterContext.closePath();waterContext.fill();
     }

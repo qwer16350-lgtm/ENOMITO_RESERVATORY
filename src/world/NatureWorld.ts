@@ -1,3 +1,4 @@
+import {GroundPatches,groundPatchWeight,type GroundPatch} from './GroundPatches.ts';
 import {ShrubWorld} from './Shrubs.ts';
 import {natureMirror} from './NatureVariation.ts';
 import { spawnTreeKeepChance } from './SpawnArea.ts';
@@ -61,8 +62,22 @@ export class NatureWorld {
     // Separate seed stream keeps existing tree positions unchanged when adding rocks.
     let rockState=(this.seed^0x9e3779b9)>>>0;
     const rockRandom=()=>{rockState=(Math.imul(rockState,1664525)+1013904223)>>>0;return rockState/4294967296;};
+    const ground=new GroundPatches(this.seed),dirtSet=new Set<GroundPatch>();
+    for(let x=0;x<1024;x+=16)for(let y=0;y<1024;y+=16)for(const patch of ground.nearby(x,y))if(patch.kind===1)dirtSet.add(patch);
+    const dirtPatches=[...dirtSet];
     const placeRock=(x:number,y:number)=>{
       const kind=Math.floor(rockRandom()*ROCK_RADII.length),scale=.72+rockRandom()*.28,radius=ROCK_RADII[kind]*scale;
+      const preference=[.88,.75,.4,0,0][kind]!;
+      if(dirtPatches.length&&rockRandom()<preference){
+        for(let attempt=0;attempt<5;attempt++){
+          const patch=dirtPatches[Math.floor(rockRandom()*dirtPatches.length)]!;
+          const node=patch.points[Math.floor(rockRandom()*patch.points.length)]!;
+          const angle=rockRandom()*Math.PI*2,distance=rockRandom()*patch.radius*.45;
+          const px=node.x+Math.cos(angle)*distance,py=node.y+Math.sin(angle)*distance;
+          if(groundPatchWeight(patch,px,py)<.65)continue;
+          x=px;y=py;break;
+        }
+      }
       if(x<0||y<0||x>=MAP_SIZE||y>=MAP_SIZE||Math.hypot(x-511.5,y-511.5)<radius+3||nearbyBig(x,y)||this.water.isWater(x,y,radius+.5))return;
       if(this.query(x-6,y-6,x+6,y+6).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+radius+.4))return;
       if(this.queryRocks(x-6,y-6,x+6,y+6).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+radius+.5))return;
@@ -91,11 +106,5 @@ export class NatureWorld {
   }
   visitAll(visitor:(object:NatureObject)=>void){for(const chunk of this.chunks.values())for(const object of chunk)visitor(object);}
   touchingTree(x:number,y:number){return this.query(x-3,y-3,x+3,y+3).some(o=>Math.hypot(o.x-x,o.y-y)<=o.radius+.32);}
-  blocked(x:number,y:number){if(x<0||y<0||x>MAP_SIZE-1||y>MAP_SIZE-1)return true;if(this.water.isWater(x,y,.22))return true;return this.query(x-3,y-3,x+3,y+3).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+.22)||this.queryRocks(x-3,y-3,x+3,y+3).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+.22);}
+  blocked(x:number,y:number){if(x<0||y<0||x>MAP_SIZE-1||y>MAP_SIZE-1)return true;return this.query(x-3,y-3,x+3,y+3).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+.22)||this.queryRocks(x-3,y-3,x+3,y+3).some(o=>Math.hypot(o.x-x,o.y-y)<o.radius+.22);}
 }
-
-
-
-
-
-
